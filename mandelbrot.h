@@ -35,6 +35,8 @@ struct mandelbrot_param
   struct ppm * picture;
 };
 
+
+
 #ifdef MEASURE
 struct mandelbrot_timing
 {
@@ -47,6 +49,9 @@ compute_mandelbrot(struct mandelbrot_param);
 #else
 void compute_mandelbrot(struct mandelbrot_param);
 #endif
+
+void init_stack();
+
 
 void init_mandelbrot(struct mandelbrot_param*);
 void destroy_mandelbrot();

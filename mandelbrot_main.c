@@ -83,15 +83,23 @@ main(int argc, char ** argv)
 #ifdef MEASURE
 #if NB_THREADS > 0
   int i;
-
+  
+  //printf("%lf\n", a);
+  //printf("%lf\n",b);
   for (i = 0; i < NB_THREADS; i++)
     {
-      printf("%i %li %li %li %li %li %li %li %li\n", i + 1, thread[i]->start.tv_sec, thread[i]->start.tv_nsec, thread[i]->stop.tv_sec, thread[i]->stop.tv_nsec, global.start.tv_sec, global.start.tv_nsec, global.stop.tv_sec, global.stop.tv_nsec);
+//      printf("%i %li %li %li %li %li %li %li %li\n", i + 1, thread[i]->start.tv_sec, thread[i]->start.tv_nsec, thread[i]->stop.tv_sec, thread[i]->stop.tv_nsec, global.start.tv_sec, global.start.tv_nsec, global.stop.tv_sec, global.stop.tv_nsec);
     }
 #else
-  printf("0 %li %li %li %li %li %li %li %li\n", thread[0]->start.tv_sec, thread[0]->start.tv_nsec, thread[0]->stop.tv_sec, thread[0]->stop.tv_nsec, global.start.tv_sec, global.start.tv_nsec, global.stop.tv_sec, global.stop.tv_nsec);
+//  printf("0 %li %li %li %li %li %li %li %li\n", thread[0]->start.tv_sec, thread[0]->start.tv_nsec, thread[0]->stop.tv_sec, thread[0]->stop.tv_nsec, global.start.tv_sec, global.start.tv_nsec, global.stop.tv_sec, global.stop.tv_nsec);
 #endif
-  printf("global difference : %li s %li ns\n",global.stop.tv_sec-global.start.tv_sec, global.stop.tv_nsec-global.start.tv_nsec);
+  double a,b,c;
+  a = (double) global.start.tv_sec + (double) global.start.tv_nsec / 1000000000;
+  b = (double) global.stop.tv_sec + (double)global.stop.tv_nsec / 1000000000;
+  c = b - a;
+  printf("%d , %lf\n",NB_THREADS,c);
+
+//  printf("global difference : %li s %li ns\n",global.stop.tv_sec-global.start.tv_sec, global.stop.tv_nsec-global.start.tv_nsec);
 #endif
 
   // Final: deallocate structures

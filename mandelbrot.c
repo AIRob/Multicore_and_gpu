@@ -51,6 +51,14 @@ struct mandelbrot_timing **timing;
 
 struct mandelbrot_param mandelbrot_param;
 
+
+/* ---- task counter ---- */
+#if NB_THREADS > 0
+int task_counter = 0;
+pthread_mutex_t lock_stack_ptr;		// a mutex to protect task_counter
+#endif
+
+
 static int num_colors(struct mandelbrot_param* param)
 {
 	return param->maxiter + 1;
@@ -133,6 +141,11 @@ init_round(struct mandelbrot_thread *args)
 		//printf("image height = %d\n",mandelbrot_param.height);
 		//printf("nbthre %d\n",NB_THREADS);
 		chunk_h = HEIGHT / NB_THREADS;
+
+	    if (pthread_mutex_init(&lock_stack_ptr, NULL) != 0)
+    	{
+    	    printf("\n Error : mutex init failed\n");
+    	}
 	}
 }
 
@@ -168,15 +181,12 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 	compute_chunk(parameters);
 
 
-
-
-
 #endif
 // Compiled only if LOADBALANCE = 1
 #if LOADBALANCE == 1
 	// Replace this code with your load-balanced smarter solution.
 	// Only thread of ID 0 compute the whole picture
-	if(args->id == 0)
+	/*if(args->id == 0)
 	{
 		// Define the region compute_chunk() has to compute
 		// Entire height: from 0 to picture's height
@@ -189,6 +199,24 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 		// Go
 		compute_chunk(parameters);
 	}
+	*/
+	while(task_counter < HEIGHT)
+	{
+		pthread_mutex_lock(&lock_stack_ptr);
+		int task = task_counter++;
+		pthread_mutex_unlock(&lock_stack_ptr);
+
+		// lign form task_counter
+		parameters->begin_h = task;
+		parameters->end_h = task+1;
+
+		// entire width
+		parameters->begin_w = 0;
+		parameters->end_w = parameters->width;
+
+		compute_chunk(parameters);
+	}
+
 #endif
 // Compiled only if LOADBALANCE = 2
 #if LOADBALANCE == 2
@@ -428,6 +456,8 @@ destroy_mandelbrot(struct mandelbrot_param param)
 {
 #if NB_THREADS > 0
 	int i;
+    pthread_mutex_destroy(&lock_stack_ptr);
+
 
 	// Initiate a stop order and resume threads in the thread pool
 	thread_stop = 1;
@@ -455,4 +485,5 @@ destroy_mandelbrot(struct mandelbrot_param param)
 
 	free(color);
 	ppm_free(param.picture);
+
 }
