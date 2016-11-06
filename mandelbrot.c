@@ -206,7 +206,7 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 		int task = task_counter++;
 		pthread_mutex_unlock(&lock_stack_ptr);
 
-		// lign form task_counter
+		// line form task_counter
 		parameters->begin_h = task;
 		parameters->end_h = task+1;
 
