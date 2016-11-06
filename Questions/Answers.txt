@@ -1,0 +1,5 @@
+1) Computation load can be imbalanced because he cost to check if a point is in Mandelbrot can differ. Indeed for a point in Mandelbrot MAXITER will be needed whereas less iteration are required for a point which is not in Mandelbrot.
+
+
+2) A load balancing method could be to stack all pixels as tasks and the thread get tasks from it when they are done with their work.
+
