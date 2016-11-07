@@ -8,13 +8,16 @@
 !*.????
 !*.?????
 
+
 # Unignore all dirs
 !*/
 
 # unignore makefile
 !Makefile
 !makefile
-
+!compile
+!variables
+!run
 
 
 *.o
