@@ -140,7 +140,7 @@ init_round(struct mandelbrot_thread *args)
 		//printf("chunk_h = %f\n",chunk_h);
 		//printf("image height = %d\n",mandelbrot_param.height);
 		//printf("nbthre %d\n",NB_THREADS);
-		chunk_h = HEIGHT / NB_THREADS;
+		chunk_h = HEIGHT / NB_THREADS;	// problem if HEIGHT is not divisible by NB_THREADS
 
 	    if (pthread_mutex_init(&lock_stack_ptr, NULL) != 0)
     	{
@@ -174,7 +174,10 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 	}*/
 
 	parameters->begin_h = args->id * chunk_h;
-	parameters->end_h = parameters->begin_h + chunk_h;
+	parameters->end_h = parameters->begin_h + chunk_h;	//here should test if last thread
+														//if it is the last -> end_h = HEIGHT
+														// to avoid skipping lines if HEIGHT not 
+														// divisible by HEIGHT
 	parameters->begin_w = 0;
 	parameters->end_w = parameters->width;
 
