@@ -58,6 +58,7 @@ int /* Return the type you prefer */
 stack_pop(stack_t *stack);
 
 void init_stack(stack_t	*stack);
+int stack_size(stack_t *stack);
 
 
 /* Debug practice: check the boolean expression expr; if it computes to 0, print a warning message on standard error and exit */

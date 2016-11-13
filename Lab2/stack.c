@@ -151,3 +151,18 @@ void init_stack(stack_t *stack)
 #endif
   stack->head = NULL;
 }
+
+int stack_size(stack_t* stack)
+{
+  int i=0;
+
+  if(!stack) return -1;
+
+  item_t *pt = stack->head;
+  while(pt)
+  {
+    i++;
+    pt = pt->next;
+  }
+  return i;
+}

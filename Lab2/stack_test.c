@@ -186,13 +186,40 @@ test_push_safe()
   return (sum == result);
 }
 
+void* thread_pop(void* arg)
+{
+  int i;
+  for(i=0;i<MAX_PUSH_POP/NB_THREADS;i++)
+  {
+    stack_pop(stack);
+  }
+  return 0;
+}
+
 int
 test_pop_safe()
 {
   // Same as the test above for parallel pop operation
+  int i=0;
+  for(i=0;i<(MAX_PUSH_POP/NB_THREADS)*NB_THREADS;i++)
+  {
+    stack_push(stack,i);
+  }
+  //printf("size = %d\n", stack_size(stack));
 
-  // For now, this test always fails
-  return 0;
+  pthread_t thread[NB_THREADS];
+
+  for (i = 0; i < NB_THREADS; i++) {
+    pthread_create(&thread[i], NULL, &thread_pop, NULL);
+  }
+  
+  for (i = 0; i < NB_THREADS; i++) {
+    pthread_join(thread[i], NULL);
+  }
+
+  //printf("size = %d\n", stack_size(stack));
+
+  return stack->head == NULL;
 }
 
 // 3 Threads should be enough to raise and detect the ABA problem
