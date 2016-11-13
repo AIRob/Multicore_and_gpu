@@ -45,6 +45,8 @@
 #endif
 #endif
 
+
+
 void
 stack_check(stack_t *stack)
 {
@@ -60,12 +62,33 @@ stack_check(stack_t *stack)
 }
 
 int /* Return the type you prefer */
-stack_push(/* Make your own signature */)
+stack_push(stack_t  *stack, int value)
 {
+  item_t *nouv = (item_t*) malloc(sizeof(item_t));
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
+  if(stack)
+  {
+    nouv->value = value;
+    pthread_mutex_lock(&lock_stack);
+    nouv->next = stack->head;
+    stack->head = nouv;
+    pthread_mutex_unlock(&lock_stack);
+  }
+
 #elif NON_BLOCKING == 1
   // Implement a harware CAS-based stack
+  if(stack)
+  {
+    item_t *old;
+    do
+    {
+      old = stack->head;
+      nouv->next = old;
+    }while(cas(&(stack->head),old,nouv));
+
+  }
+
 #else
   /*** Optional ***/
   // Implement a software CAS-based stack
@@ -80,12 +103,34 @@ stack_push(/* Make your own signature */)
 }
 
 int /* Return the type you prefer */
-stack_pop(/* Make your own signature */)
+stack_pop(stack_t *stack)
 {
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
+  if(stack->head)
+  {
+    pthread_mutex_lock(&lock_stack);
+    item_t *old = stack->head;
+    stack->head = old->next;
+    pthread_mutex_unlock(&lock_stack);
+
+    int old_value = old->value;
+    free(old);
+    return old_value;
+  }
+
+
 #elif NON_BLOCKING == 1
   // Implement a harware CAS-based stack
+  if(stack && stack->head)
+  {
+    item_t *old;
+    do
+    {
+      old = stack->head;
+    }while(cas(&(stack->head),old,old->next));
+  }
+
 #else
   /*** Optional ***/
   // Implement a software CAS-based stack

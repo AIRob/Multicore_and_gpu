@@ -1,0 +1,17 @@
+ABA problem
+
+* thread 1 : starts pop A (preempted before CAS)
+	head->A->B->C->null
+	pool->null
+* thread 2 : pop A (success)
+	head->B->C->null
+	pool->A
+* thread 3 : pop B
+	head->C->null
+	pool->A->B->null
+* thread 2 : push A
+	head->A->C->null
+	pool->B->null
+* thread 0 : ends pop A
+	head->B->null
+	pool->B->A->null

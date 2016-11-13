@@ -27,20 +27,33 @@
 #ifndef STACK_H
 #define STACK_H
 
+ #define MAX_BUFFER_SIZE 128
+
+
+struct item
+{
+	int value;
+	struct item *next;
+};
+typedef struct item item_t;
+
+
 struct stack
 {
-  // This is a fake structure; change it to your needs
-  int change_this_member;
+	item_t *head;	 
 };
 typedef struct stack stack_t;
 
+
+pthread_mutex_t lock_stack;
+
 // Pushes an element in a thread-safe manner
 int /* Return the type you prefer */
-stack_push(/* Make your own signature */);
+stack_push(stack_t *stack, int value);
 
 // Pops an element in a thread-safe manner
 int /* Return the type you prefer */
-stack_pop(/* Make your own signature */);
+stack_pop(stack_t *stack);
 
 
 

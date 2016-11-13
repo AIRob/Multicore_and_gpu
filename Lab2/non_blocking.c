@@ -75,6 +75,7 @@ cas(size_t* reg, size_t oldval, size_t newval)
 inline size_t
 software_cas(size_t* reg, size_t oldval, size_t newval, pthread_mutex_t *lock)
 {
+  /*
   pthread_mutex_lock(lock);
   if (memcmp(reg, &oldval, sizeof(void*)) == 0)
     {
@@ -87,7 +88,17 @@ software_cas(size_t* reg, size_t oldval, size_t newval, pthread_mutex_t *lock)
     {
       pthread_mutex_unlock(lock);
       return *reg;
+    }*/
+
+      
+    pthread_mutex_lock(lock);
+    size_t lold = *reg;
+    if(lold == oldval)
+    {
+      *reg = newval;
     }
+    pthread_mutex_unlock(lock);
+    return lold;
 }
 #endif
 

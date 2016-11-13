@@ -48,6 +48,11 @@ typedef int data_t;
 #define DATA_SIZE sizeof(data_t)
 #define DATA_VALUE 5
 
+/* --------------------- mutex lock ------------------ */
+#if NON_BLOCKING == 0
+pthread_mutex_t lock_stack;   // lock used by the push and pop functions
+#endif
+
 stack_t *stack;
 data_t data;
 
@@ -71,6 +76,7 @@ stack_measure_pop(void* arg)
     for (i = 0; i < MAX_PUSH_POP / NB_THREADS; i++)
       {
         // See how fast your implementation can pop MAX_PUSH_POP elements in parallel
+        stack_pop(stack);
       }
     clock_gettime(CLOCK_MONOTONIC, &t_stop[args->id]);
 
@@ -87,6 +93,7 @@ stack_measure_push(void* arg)
   for (i = 0; i < MAX_PUSH_POP / NB_THREADS; i++)
     {
         // See how fast your implementation can push MAX_PUSH_POP elements in parallel
+      stack_push(stack,i+args->id);
     }
   clock_gettime(CLOCK_MONOTONIC, &t_stop[args->id]);
 
@@ -113,7 +120,7 @@ test_setup()
 
   // Reset explicitely all members to a well-known initial value
   // For instance (to be deleted as your stack design progresses):
-  stack->change_this_member = 0;
+  stack->head = 0;
 }
 
 void
@@ -137,14 +144,14 @@ test_push_safe()
   // several threads push concurrently to it
 
   // Do some work
-  stack_push(/* add relevant arguments here */);
+  stack_push(stack,1/* add relevant arguments here */);
 
   // check if the stack is in a consistent state
   stack_check(stack);
 
   // check other properties expected after a push operation
   // (this is to be updated as your stack design progresses)
-  assert(stack->change_this_member == 0);
+  assert(stack->head != 0);
 
   // For now, this test always fails
   return 0;
@@ -260,6 +267,12 @@ test_cas()
 int
 main(int argc, char **argv)
 {
+
+  if (pthread_mutex_init(&lock_stack, NULL) != 0)
+  {
+      printf("\n Error : mutex init failed\n");
+  }
+
 setbuf(stdout, NULL);
 // MEASURE == 0 -> run unit tests
 #if MEASURE == 0
