@@ -134,14 +134,37 @@ test_finalize()
   // Destroy properly your test batch
 }
 
+
+// function called by each thread to test concurrent push
+void* thread_push(void * arg)
+{
+  int i=0;
+  for(i=0; i<MAX_PUSH_POP / NB_THREADS; ++i)
+  {
+    stack_push(stack, i);
+  }
+  return 0;
+}
+
 int
 test_push_safe()
 {
   // Make sure your stack remains in a good state with expected content when
   // several threads push concurrently to it
 
+  int i;
+  pthread_t thread[NB_THREADS];
+
+  for (i = 0; i < NB_THREADS; i++) {
+    pthread_create(&thread[i], NULL, &thread_push, NULL);
+  }
+  
+  for (i = 0; i < NB_THREADS; i++) {
+    pthread_join(thread[i], NULL);
+  }
+
   // Do some work
-  stack_push(stack,1/* add relevant arguments here */);
+  //stack_push(stack,1/* add relevant arguments here */);
 
   // check if the stack is in a consistent state
   stack_check(stack);
@@ -150,8 +173,17 @@ test_push_safe()
   // (this is to be updated as your stack design progresses)
   assert(stack->head != 0);
 
+  int sum = 0;
+  while(stack->head)
+  {
+    sum += stack_pop(stack);
+  }
+
+  int temp = (MAX_PUSH_POP/NB_THREADS);
+  int result = NB_THREADS * ((temp-1)*temp / 2);
+
   // For now, this test always fails
-  return 0;
+  return (sum == result);
 }
 
 int
