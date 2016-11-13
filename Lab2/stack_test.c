@@ -226,14 +226,16 @@ test_pop_safe()
 // 3 Threads should be enough to raise and detect the ABA problem
 #define ABA_NB_THREADS 3
 
+#if NON_BLOCKING == 1
+
 item_t A,B,C;
 int wait1 = 1, wait2 = 1, wait3 = 1, wait4 = 1;
 
 
 
-
 void* aba_thread_0(void* arg)
 {
+
   item_t *old = stack->head;
   item_t *new_head = old->next;
   printf("Thread 0 : preempted before cas\n");
@@ -243,6 +245,7 @@ void* aba_thread_0(void* arg)
   while(wait2);
 
   cas((size_t*)&(stack->head),(size_t) old,(size_t) new_head);
+
   printf("Thread 0 : pop \n");
 
   return 0;
@@ -278,7 +281,7 @@ void* aba_thread_2(void* arg)
   wait4 = 0;
   return 0;
 }
-
+#endif
 
 int
 test_aba()
@@ -319,6 +322,7 @@ test_aba()
     pthread_join(threads[i], NULL);
   }
 
+  // ABA problem detected if stack points to B instead of C
   aba_detected = stack->head == &B;
 
 
