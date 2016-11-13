@@ -226,12 +226,102 @@ test_pop_safe()
 // 3 Threads should be enough to raise and detect the ABA problem
 #define ABA_NB_THREADS 3
 
+item_t A,B,C;
+int wait1 = 1, wait2 = 1, wait3 = 1, wait4 = 1;
+
+
+
+
+void* aba_thread_0(void* arg)
+{
+  item_t *old = stack->head;
+  item_t *new_head = old->next;
+  printf("Thread 0 : preempted before cas\n");
+
+  // here should resume main and wait
+  wait1 = 0;
+  while(wait2);
+
+  cas((size_t*)&(stack->head),(size_t) old,(size_t) new_head);
+  printf("Thread 0 : pop \n");
+
+  return 0;
+}
+
+void* aba_thread_1(void *arg)
+{
+  item_t *old = stack->head;
+  stack->head = old->next;
+
+  printf("Thread 1 : pop %d -> success\n",  old->value);
+
+  // here wait
+  wait3 = 0;
+  while(wait4);
+
+  // push A
+  A.next = stack->head;
+  stack->head = &A;
+  printf("Thread 1 : push 1 -> success\n");
+
+  wait2 = 0;
+  return 0;
+}
+
+void* aba_thread_2(void* arg)
+{
+  item_t *old = stack->head;
+  stack->head = old->next;
+
+
+  printf("Thread 2 : pop %d -> success\n", old->value);
+  wait4 = 0;
+  return 0;
+}
+
+
 int
 test_aba()
 {
+
 #if NON_BLOCKING == 1 || NON_BLOCKING == 2
   int success, aba_detected = 0;
   // Write here a test for the ABA problem
+
+
+  // empty the stack
+  while(stack->head)
+    stack_pop(stack);
+
+  // fill with A,B,C
+  A.value = 1;
+  B.value = 2;
+  C.value = 3;
+  A.next = &B;
+  B.next = &C;
+  C.next = NULL;
+  stack->head = &A;
+
+  printf("\n");
+
+
+  pthread_t threads[ABA_NB_THREADS];
+  int i=0;
+  
+  pthread_create(&threads[0],NULL,aba_thread_0,NULL);
+  while(wait1);
+  pthread_create(&threads[1],NULL,aba_thread_1,NULL);
+  while(wait3);
+  pthread_create(&threads[2],NULL,aba_thread_2,NULL);
+
+  for(i=0;i<ABA_NB_THREADS;++i)
+  {
+    pthread_join(threads[i], NULL);
+  }
+
+  aba_detected = stack->head == &B;
+
+
   success = aba_detected;
   return success;
 #else
