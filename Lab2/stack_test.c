@@ -182,6 +182,7 @@ test_push_safe()
   int temp = (MAX_PUSH_POP/NB_THREADS);
   int result = NB_THREADS * ((temp-1)*temp / 2);
 
+  //printf("sum = %d\n", sum);
   // For now, this test always fails
   return (sum == result);
 }

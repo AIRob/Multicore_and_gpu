@@ -65,11 +65,11 @@ int /* Return the type you prefer */
 stack_push(stack_t  *stack, int value)
 {
   item_t *nouv = (item_t*) malloc(sizeof(item_t));
+  nouv->value = value;
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
   if(stack)
   {
-    nouv->value = value;
     pthread_mutex_lock(&stack->lock);
     nouv->next = stack->head;
     stack->head = nouv;
@@ -85,7 +85,7 @@ stack_push(stack_t  *stack, int value)
     {
       old = stack->head;
       nouv->next = old;
-    }while(cas(&(stack->head),old,nouv) != old);
+    }while(cas((size_t*)&(stack->head),(size_t)old,(size_t)nouv) != (size_t)old);
 
   }
 
@@ -128,7 +128,11 @@ stack_pop(stack_t *stack)
     do
     {
       old = stack->head;
-    }while(cas(&(stack->head),old,old->next));
+    }while(cas((size_t*)&(stack->head),(size_t) old,(size_t) old->next) != (size_t) old);
+    
+    int old_value = old->value;
+    free(old);
+    return old_value;  
   }
 
 #else
