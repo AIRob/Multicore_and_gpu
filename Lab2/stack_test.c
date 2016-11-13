@@ -48,10 +48,7 @@ typedef int data_t;
 #define DATA_SIZE sizeof(data_t)
 #define DATA_VALUE 5
 
-/* --------------------- mutex lock ------------------ */
-#if NON_BLOCKING == 0
-pthread_mutex_t lock_stack;   // lock used by the push and pop functions
-#endif
+
 
 stack_t *stack;
 data_t data;
@@ -267,11 +264,6 @@ test_cas()
 int
 main(int argc, char **argv)
 {
-
-  if (pthread_mutex_init(&lock_stack, NULL) != 0)
-  {
-      printf("\n Error : mutex init failed\n");
-  }
 
 setbuf(stdout, NULL);
 // MEASURE == 0 -> run unit tests

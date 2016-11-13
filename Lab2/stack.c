@@ -70,10 +70,10 @@ stack_push(stack_t  *stack, int value)
   if(stack)
   {
     nouv->value = value;
-    pthread_mutex_lock(&lock_stack);
+    pthread_mutex_lock(&stack->lock);
     nouv->next = stack->head;
     stack->head = nouv;
-    pthread_mutex_unlock(&lock_stack);
+    pthread_mutex_unlock(&stack->lock);
   }
 
 #elif NON_BLOCKING == 1
@@ -85,7 +85,7 @@ stack_push(stack_t  *stack, int value)
     {
       old = stack->head;
       nouv->next = old;
-    }while(cas(&(stack->head),old,nouv));
+    }while(cas(&(stack->head),old,nouv) != old);
 
   }
 
@@ -109,10 +109,10 @@ stack_pop(stack_t *stack)
   // Implement a lock_based stack
   if(stack->head)
   {
-    pthread_mutex_lock(&lock_stack);
+    pthread_mutex_lock(&stack->lock);
     item_t *old = stack->head;
     stack->head = old->next;
-    pthread_mutex_unlock(&lock_stack);
+    pthread_mutex_unlock(&stack->lock);
 
     int old_value = old->value;
     free(old);
@@ -139,3 +139,15 @@ stack_pop(stack_t *stack)
   return 0;
 }
 
+
+
+void init_stack(stack_t *stack)
+{
+#if NON_BLOCKING == 0
+ if (pthread_mutex_init(&stack->lock, NULL) != 0)
+  {
+      printf("\n Error : stack lock init failed\n");
+  }
+#endif
+  stack->head = NULL;
+}

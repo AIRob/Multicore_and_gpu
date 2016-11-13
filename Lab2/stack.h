@@ -41,11 +41,13 @@ typedef struct item item_t;
 struct stack
 {
 	item_t *head;	 
+#if NON_BLOCKING == 0
+	pthread_mutex_t lock;
+#endif	
 };
 typedef struct stack stack_t;
 
 
-pthread_mutex_t lock_stack;
 
 // Pushes an element in a thread-safe manner
 int /* Return the type you prefer */
@@ -55,6 +57,7 @@ stack_push(stack_t *stack, int value);
 int /* Return the type you prefer */
 stack_pop(stack_t *stack);
 
+void init_stack(stack_t	*stack);
 
 
 /* Debug practice: check the boolean expression expr; if it computes to 0, print a warning message on standard error and exit */
