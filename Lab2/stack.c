@@ -62,11 +62,11 @@ stack_check(stack_t *stack)
 }
 
 int /* Return the type you prefer */
-stack_push(stack_t  *stack, int value, item_t **pool)
+stack_push(stack_t  *stack, int value, int pool_num)
 {
   // item_t *nouv = (item_t*) malloc(sizeof(item_t)); REPLACED BY from pool()
 
-  item_t *nouv = (item_t*) from_pool(pool);
+  item_t *nouv = (item_t*) from_pool(pool_num);
   nouv->value = value;
 
 #if NON_BLOCKING == 0
@@ -116,7 +116,7 @@ stack_push(stack_t  *stack, int value, item_t **pool)
 }
 
 int /* Return the type you prefer */
-stack_pop(stack_t *stack, item_t **pool)
+stack_pop(stack_t *stack, int pool_num)
 {
   int old_value = 0;
   item_t *old = 0;
@@ -126,7 +126,7 @@ stack_pop(stack_t *stack, item_t **pool)
   if(stack->head)
   {
     pthread_mutex_lock(&stack->lock);
-    item_t *old = stack->head;
+    old = stack->head;
     stack->head = old->next;
     pthread_mutex_unlock(&stack->lock);
 
@@ -152,7 +152,6 @@ stack_pop(stack_t *stack, item_t **pool)
 
 	if(stack && stack->head)
   {
-    item_t *old;
     do
     {
       old = stack->head;
@@ -164,7 +163,7 @@ stack_pop(stack_t *stack, item_t **pool)
 
   // add_pool INSTEAD OF free()
 
-  add_pool(pool, old);
+  add_pool(pool_num, old);
 
   return old_value;
 }
@@ -206,31 +205,34 @@ int stack_size(stack_t* stack)
 }
 
 
-void add_pool(item_t** pool, item_t* item)
+void add_pool(int pool_num, item_t* item)
 {
-  if(!item) return;
-  item_t *pt = *pool;
-  while(pt && pt->next)
+  if(!pools[pool_num])
   {
-    pt = pt->next;
-  }
-  if(pt)
-  {
-    pt->next = item;
+    pools[pool_num] = item;
   }else
   {
-    *pool = item;
+    pools_end[pool_num]->next = item;
+    pools_end[pool_num] = item;
+    //item_t *pt = pools[pool_num];
+    //while(pt->next)
+    //  pt = pt->next;
+    //pt->next = item;
   }
   item->next = NULL;
+  pools_end[pool_num] = item;
 }
 
-item_t* from_pool(item_t **pool)
+item_t* from_pool(int pool_num)
 {
   item_t *pt;
-  if(*pool)
+
+  if(pools[pool_num])
   {
-    pt = *pool;
-    *pool = pt->next;
+    pt = pools[pool_num];
+    pools[pool_num] = pt->next;
+    if(pt->next == NULL)
+      pools_end[pool_num] = NULL;
   }else
   {     // the pool is empty
     pt = (item_t*) malloc(sizeof(item_t));

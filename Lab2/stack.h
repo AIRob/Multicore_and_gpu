@@ -49,14 +49,15 @@ typedef struct stack stack_t;
 
 // global pools
 item_t *pools[NB_THREADS];
+item_t *pools_end[NB_THREADS];
 
 // Pushes an element in a thread-safe manner
 int /* Return the type you prefer */
-stack_push(stack_t *stack, int value, item_t **pool);
+stack_push(stack_t *stack, int value, int pool_num);
 
 // Pops an element in a thread-safe manner
 int /* Return the type you prefer */
-stack_pop(stack_t *stack, item_t **pool);
+stack_pop(stack_t *stack, int pool_num	);
 
 // Initialize the stack
 void stack_init(stack_t	*stack);
@@ -70,10 +71,10 @@ int stack_size(stack_t *stack);
 
 // Manage the pool
 // append an item in the pool
-void add_pool(item_t **pool, item_t* item);
+void add_pool(int pool_num, item_t* item);
 
 // get an item from the pool
-item_t* from_pool(item_t **pool);
+item_t* from_pool(int pool_num);
 
 // free the pool
 void free_pools();

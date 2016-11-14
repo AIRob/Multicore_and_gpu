@@ -75,7 +75,7 @@ stack_measure_pop(void* arg)
     for (i = 0; i < MAX_PUSH_POP / NB_THREADS; i++)
       {
         // See how fast your implementation can pop MAX_PUSH_POP elements in parallel
-        stack_pop(stack, pools + args->id);
+        stack_pop(stack, args->id);
       }
     clock_gettime(CLOCK_MONOTONIC, &t_stop[args->id]);
 
@@ -92,7 +92,7 @@ stack_measure_push(void* arg)
   for (i = 0; i < MAX_PUSH_POP / NB_THREADS; i++)
     {
         // See how fast your implementation can push MAX_PUSH_POP elements in parallel
-      stack_push(stack,i+args->id,pools + args->id);
+      stack_push(stack,i+args->id,args->id);
     }
   clock_gettime(CLOCK_MONOTONIC, &t_stop[args->id]);
 
@@ -122,7 +122,7 @@ test_setup()
   int i;
   for(i=0;i<MAX_PUSH_POP;++i)
   {
-    stack_push(stack, data, pools + 0);   // use the first pool because NOT IMPORTANT
+    stack_push(stack, data, 0);   // use the first pool because NOT IMPORTANT
   }
 #elif MEASURE == 2    // for push test : we should fill the pools to avoid malloc
 
@@ -132,7 +132,7 @@ test_setup()
     for(j=0;j<MAX_PUSH_POP / NB_THREADS ;++j)
     {
       item_t *new_item = (item_t*) malloc(sizeof(item_t));
-      add_pool(pools + i, new_item);
+      add_pool(i, new_item);
     }
   }
 #endif
@@ -143,7 +143,7 @@ test_teardown()
 {
   // Do not forget to free your stacks after each test
   // to avoid memory leaks
-  while(stack->head) stack_pop(stack, pools + 0);     // empty the stack
+  while(stack->head) stack_pop(stack, 0);     // empty the stack
   stack_destroy(stack);                               //destroy the stack
 }
 
@@ -162,7 +162,7 @@ void* thread_push(void * arg)
   int i=0;
   for(i=0; i<MAX_PUSH_POP / NB_THREADS; ++i)
   {
-    stack_push(stack, i, pools +  args->id); 
+    stack_push(stack, i, args->id); 
   }
   return 0;
 }
@@ -197,16 +197,19 @@ test_push_safe()
   // (this is to be updated as your stack design progresses)
   assert(stack->head != 0);
 
-  int sum = 0;
+
+
+  long long int sum = 0;
   while(stack->head)
   {
-    sum += stack_pop(stack, pools + 0);
+    sum += stack_pop(stack, 0);
   }
 
-  int temp = (MAX_PUSH_POP/NB_THREADS);
-  int result = NB_THREADS * ((temp-1)*temp / 2);
+  long long int temp = (MAX_PUSH_POP/NB_THREADS);
+  long long int result = NB_THREADS * ((temp-1)*temp / 2);
 
-  //printf("sum = %d\n", sum);
+  //printf("result = %lld\n",result);
+  //printf("sum = %lld\n", sum);
   // For now, this test always fails
   return (sum == result);
 }
@@ -218,7 +221,7 @@ void* thread_pop(void* arg)
   int i;
   for(i=0;i<MAX_PUSH_POP/NB_THREADS;i++)
   {
-    stack_pop(stack, pools + args->id); 
+    stack_pop(stack, args->id); 
   }
   return 0;
 }
@@ -232,7 +235,7 @@ test_pop_safe()
 
   for(i=0;i<(MAX_PUSH_POP/NB_THREADS)*NB_THREADS;i++)
   {
-    stack_push(stack,i, pools + 0);    // use first pool because NOT IMPORTANT
+    stack_push(stack,i, 0);    // use first pool because NOT IMPORTANT
   }
   //printf("\n =============\n size = %d\n", stack_size(stack));
 
@@ -287,7 +290,7 @@ void* aba_thread_1(void *arg)
 {
   item_t *old = stack->head;
   stack->head = old->next;
-  add_pool(pools + 0, old);
+  add_pool(0, old);
 
   printf("Thread 1 : pop %d -> success\n",  old->value);
 
@@ -296,7 +299,7 @@ void* aba_thread_1(void *arg)
   while(wait4);
 
   // push A
-  item_t *new_item = from_pool(pools + 0);
+  item_t *new_item = from_pool(0);
   new_item->value = 1;
   new_item->next = stack->head;
   stack->head = new_item;
@@ -310,7 +313,7 @@ void* aba_thread_2(void* arg)
 {
   item_t *old = stack->head;
   stack->head = old->next;
-  add_pool(pools + 0, old);
+  add_pool(0, old);
 
   printf("Thread 2 : pop %d -> success\n", old->value);
   wait4 = 0;
@@ -331,7 +334,7 @@ test_aba()
 
   // empty the stack
   while(stack->head)
-    stack_pop(stack, pools + 0);
+    stack_pop(stack, 0);
 
 
     A = (item_t*) malloc(sizeof(item_t));
