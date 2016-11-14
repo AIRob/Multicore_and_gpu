@@ -119,9 +119,21 @@ test_setup()
   stack_init(stack);
 
 #if MEASURE == 1    // for pop test  : first fill the stack
+  int i;
   for(i=0;i<MAX_PUSH_POP;++i)
   {
     stack_push(stack, data, pools + 0);   // use the first pool because NOT IMPORTANT
+  }
+#elif MEASURE == 2    // for push test : we should fill the pools to avoid malloc
+
+  int i,j;
+  for(i = 0;i<NB_THREADS; ++i)
+  {
+    for(j=0;j<MAX_PUSH_POP / NB_THREADS ;++j)
+    {
+      item_t *new_item = (item_t*) malloc(sizeof(item_t));
+      add_pool(pools + i, new_item);
+    }
   }
 #endif
 }
@@ -131,8 +143,8 @@ test_teardown()
 {
   // Do not forget to free your stacks after each test
   // to avoid memory leaks
-  while(stack->head) stack_pop(stack, pools + 0);
-  stack_destroy(stack);
+  while(stack->head) stack_pop(stack, pools + 0);     // empty the stack
+  stack_destroy(stack);                               //destroy the stack
 }
 
 void
