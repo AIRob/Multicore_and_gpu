@@ -114,10 +114,14 @@ test_setup()
 
   // Allocate a new stack and reset its values
   stack = malloc(sizeof(stack_t));
+  stack_init(stack);
 
-  // Reset explicitely all members to a well-known initial value
-  // For instance (to be deleted as your stack design progresses):
-  stack->head = 0;
+#if MEASURE == 1    // for pop test  : first fill the stack
+  for(i=0;i<MAX_PUSH_POP;++i)
+  {
+    stack_push(stack, data);
+  }
+#endif
 }
 
 void
@@ -126,7 +130,7 @@ test_teardown()
   // Do not forget to free your stacks after each test
   // to avoid memory leaks
   while(stack->head) stack_pop(stack);
-  free(stack);
+  stack_destroy(stack);
 }
 
 void

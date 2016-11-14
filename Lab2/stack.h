@@ -57,7 +57,13 @@ stack_push(stack_t *stack, int value);
 int /* Return the type you prefer */
 stack_pop(stack_t *stack);
 
-void init_stack(stack_t	*stack);
+// Initialize the stack
+void stack_init(stack_t	*stack);
+
+// Destroy the stack
+void stack_destroy(stack_t *stack);
+
+// Get the number of items
 int stack_size(stack_t *stack);
 
 

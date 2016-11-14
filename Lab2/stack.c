@@ -170,7 +170,7 @@ stack_pop(stack_t *stack)
 
 
 
-void init_stack(stack_t *stack)
+void stack_init(stack_t *stack)
 {
 #if NON_BLOCKING == 0
  if (pthread_mutex_init(&stack->lock, NULL) != 0)
@@ -179,6 +179,14 @@ void init_stack(stack_t *stack)
   }
 #endif
   stack->head = NULL;
+}
+
+void stack_destroy(stack_t *stack)
+{
+#if NON_BLOCKING == 0
+  pthread_mutex_destroy(&stack->lock);
+#endif
+  free(stack);
 }
 
 int stack_size(stack_t* stack)
