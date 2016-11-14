@@ -62,9 +62,11 @@ stack_check(stack_t *stack)
 }
 
 int /* Return the type you prefer */
-stack_push(stack_t  *stack, int value)
+stack_push(stack_t  *stack, int value, item_t **pool)
 {
-  item_t *nouv = (item_t*) malloc(sizeof(item_t));
+  // item_t *nouv = (item_t*) malloc(sizeof(item_t)); REPLACED BY from pool()
+
+  item_t *nouv = (item_t*) from_pool(pool);
   nouv->value = value;
 
 #if NON_BLOCKING == 0
@@ -114,8 +116,11 @@ stack_push(stack_t  *stack, int value)
 }
 
 int /* Return the type you prefer */
-stack_pop(stack_t *stack)
+stack_pop(stack_t *stack, item_t **pool)
 {
+  int old_value = 0;
+  item_t *old = 0;
+
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
   if(stack->head)
@@ -125,9 +130,7 @@ stack_pop(stack_t *stack)
     stack->head = old->next;
     pthread_mutex_unlock(&stack->lock);
 
-    int old_value = old->value;
-    free(old);
-    return old_value;
+    old_value = old->value;
   }
 
 
@@ -135,21 +138,17 @@ stack_pop(stack_t *stack)
   // Implement a harware CAS-based stack
   if(stack && stack->head)
   {
-    item_t *old;
     do
     {
       old = stack->head;
     }while(cas((size_t*)&(stack->head),(size_t) old,(size_t) old->next) != (size_t) old);
 
-    int old_value = old->value;
-    free(old);
-    return old_value;
+    old_value = old->value;
   }
 
 #else
   /*** Optional ***/
   // Implement a software CAS-based stack
-
 
 	if(stack && stack->head)
   {
@@ -159,13 +158,15 @@ stack_pop(stack_t *stack)
       old = stack->head;
     }while(software_cas((size_t*)&(stack->head),(size_t) old,(size_t) old->next, &stack->lock) != (size_t) old);
 
-    int old_value = old->value;
-    free(old);
-    return old_value;
+    old_value = old->value;
   }
 #endif
 
-  return 0;
+  // add_pool INSTEAD OF free()
+
+  add_pool(pool, old);
+
+  return old_value;
 }
 
 
@@ -207,7 +208,7 @@ int stack_size(stack_t* stack)
 
 void add_pool(item_t** pool, item_t* item)
 {
-
+  if(!item) return;
   item_t *pt = *pool;
   while(pt && pt->next)
   {
@@ -225,7 +226,36 @@ void add_pool(item_t** pool, item_t* item)
 
 item_t* from_pool(item_t **pool)
 {
-  item_t *pt = *pool;
-  *pool = pt->next;
+  item_t *pt;
+  if(*pool)
+  {
+    pt = *pool;
+    *pool = pt->next;
+  }else
+  {     // the pool is empty
+    pt = (item_t*) malloc(sizeof(item_t));
+  }
   return pt;
+}
+
+void free_pools()
+{
+
+  int i;
+  for(i=0;i<NB_THREADS;++i)
+  {
+    if(pools[i])
+    {
+      item_t *pool = pools[i];
+      item_t *prev = NULL;
+      while(pool)
+      {
+        prev = pool;
+        pool = (pool)->next;
+        free(prev);
+      }
+      pools[i] = NULL;
+    }
+  }
+
 }
