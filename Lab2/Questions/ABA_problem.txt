@@ -1,3 +1,11 @@
+1)
+Compare and swap is used to check the validity of a value that might have been changed by another thread.
+Only if the value hasn't been changed it is swapped to a new one.
+
+
+
+2)
+
 ABA problem
 
 * thread 1 : starts pop A (preempted before CAS)

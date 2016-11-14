@@ -5,20 +5,20 @@
  *  Copyright 2011 Nicolas Melot
  *
  * This file is part of TDDD56.
- * 
+ *
  *     TDDD56 is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     TDDD56 is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with TDDD56. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #ifndef DEBUG
@@ -53,7 +53,7 @@ stack_check(stack_t *stack)
 // Do not perform any sanity check if performance is bein measured
 #if MEASURE == 0
 	// Use assert() to check if your stack is in a state that makes sens
-	// This test should always pass 
+	// This test should always pass
 	assert(1 == 1);
 
 	// This test fails if the task is not allocated or if the allocation failed
@@ -66,6 +66,7 @@ stack_push(stack_t  *stack, int value)
 {
   item_t *nouv = (item_t*) malloc(sizeof(item_t));
   nouv->value = value;
+
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
   if(stack)
@@ -92,6 +93,16 @@ stack_push(stack_t  *stack, int value)
 #else
   /*** Optional ***/
   // Implement a software CAS-based stack
+	if(stack)
+  {
+    item_t *old;
+    do
+    {
+      old = stack->head;
+      nouv->next = old;
+    }while(software_cas((size_t*)&(stack->head),(size_t)old,(size_t)nouv, &stack->lock) != (size_t)old);
+
+  }
 #endif
 
   // Debug practice: you can check if this operation results in a stack in a consistent check
@@ -129,15 +140,29 @@ stack_pop(stack_t *stack)
     {
       old = stack->head;
     }while(cas((size_t*)&(stack->head),(size_t) old,(size_t) old->next) != (size_t) old);
-    
+
     int old_value = old->value;
     free(old);
-    return old_value;  
+    return old_value;
   }
 
 #else
   /*** Optional ***/
   // Implement a software CAS-based stack
+
+
+	if(stack && stack->head)
+  {
+    item_t *old;
+    do
+    {
+      old = stack->head;
+    }while(software_cas((size_t*)&(stack->head),(size_t) old,(size_t) old->next, &stack->lock) != (size_t) old);
+
+    int old_value = old->value;
+    free(old);
+    return old_value;
+  }
 #endif
 
   return 0;

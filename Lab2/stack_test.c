@@ -5,20 +5,20 @@
  *  Copyright 2011 Nicolas Melot
  *
  * This file is part of TDDD56.
- * 
+ *
  *     TDDD56 is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     TDDD56 is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with TDDD56. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #include <stdio.h>
@@ -125,6 +125,7 @@ test_teardown()
 {
   // Do not forget to free your stacks after each test
   // to avoid memory leaks
+  while(stack->head) stack_pop(stack);
   free(stack);
 }
 
@@ -158,7 +159,7 @@ test_push_safe()
   for (i = 0; i < NB_THREADS; i++) {
     pthread_create(&thread[i], NULL, &thread_push, NULL);
   }
-  
+
   for (i = 0; i < NB_THREADS; i++) {
     pthread_join(thread[i], NULL);
   }
@@ -213,7 +214,7 @@ test_pop_safe()
   for (i = 0; i < NB_THREADS; i++) {
     pthread_create(&thread[i], NULL, &thread_pop, NULL);
   }
-  
+
   for (i = 0; i < NB_THREADS; i++) {
     pthread_join(thread[i], NULL);
   }
@@ -226,12 +227,35 @@ test_pop_safe()
 // 3 Threads should be enough to raise and detect the ABA problem
 #define ABA_NB_THREADS 3
 
-#if NON_BLOCKING == 1
+#if NON_BLOCKING == 1 || NON_BLOCKING == 2
 
-item_t A,B,C;
+item_t *A,*B,*C;
 int wait1 = 1, wait2 = 1, wait3 = 1, wait4 = 1;
 
+item_t *pool;
 
+void add_pool(item_t* item)
+{
+  if(pool)
+  {
+    item_t* head = pool;
+    while (pool->next != NULL) {
+      pool = pool->next;
+    }
+    pool->next = item;
+    pool = head;
+  }else{
+    pool = item;
+  }
+  item->next = NULL;
+}
+
+item_t* from_pool()
+{
+  item_t *pt = pool;
+  pool = pool->next;
+  return pt;
+}
 
 void* aba_thread_0(void* arg)
 {
@@ -244,8 +268,11 @@ void* aba_thread_0(void* arg)
   wait1 = 0;
   while(wait2);
 
+#if NON_BLOCKING == 1
   cas((size_t*)&(stack->head),(size_t) old,(size_t) new_head);
-
+#elif NON_BLOCKING == 2
+  software_cas((size_t*)&(stack->head),(size_t) old,(size_t) new_head, &stack->lock);
+#endif
   printf("Thread 0 : pop \n");
 
   return 0;
@@ -255,6 +282,7 @@ void* aba_thread_1(void *arg)
 {
   item_t *old = stack->head;
   stack->head = old->next;
+  add_pool(old);
 
   printf("Thread 1 : pop %d -> success\n",  old->value);
 
@@ -263,8 +291,10 @@ void* aba_thread_1(void *arg)
   while(wait4);
 
   // push A
-  A.next = stack->head;
-  stack->head = &A;
+  item_t *new_item = from_pool();
+  new_item->value = 1;
+  new_item->next = stack->head;
+  stack->head = new_item;
   printf("Thread 1 : push 1 -> success\n");
 
   wait2 = 0;
@@ -275,7 +305,7 @@ void* aba_thread_2(void* arg)
 {
   item_t *old = stack->head;
   stack->head = old->next;
-
+  add_pool(old);
 
   printf("Thread 2 : pop %d -> success\n", old->value);
   wait4 = 0;
@@ -291,26 +321,30 @@ test_aba()
   int success, aba_detected = 0;
   // Write here a test for the ABA problem
 
-
   // empty the stack
   while(stack->head)
     stack_pop(stack);
 
-  // fill with A,B,C
-  A.value = 1;
-  B.value = 2;
-  C.value = 3;
-  A.next = &B;
-  B.next = &C;
-  C.next = NULL;
-  stack->head = &A;
 
-  printf("\n");
+    A = (item_t*) malloc(sizeof(item_t));
+    B = (item_t*) malloc(sizeof(item_t));
+    C = (item_t*) malloc(sizeof(item_t));
+
+    A->value = 1;
+    A->next = B;
+
+    B->value = 2;
+    B->next = C;
+
+    C->value = 3;
+    C->next = NULL;
+
+    stack->head = A;
 
 
   pthread_t threads[ABA_NB_THREADS];
   int i=0;
-  
+
   pthread_create(&threads[0],NULL,aba_thread_0,NULL);
   while(wait1);
   pthread_create(&threads[1],NULL,aba_thread_1,NULL);
@@ -323,10 +357,26 @@ test_aba()
   }
 
   // ABA problem detected if stack points to B instead of C
-  aba_detected = stack->head == &B;
+  item_t* pt = pool;
+  printf("Pool:\n");
+  while(pt) {
+    printf("%d\n", pt);
+    if(pt == stack->head)
+      aba_detected = 1;
+    pt = pt->next;
+
+  }
+  printf("Stack:\n");
+  item_t *st = stack->head;
+  while(st) {
+    printf("%d\n", st);
+    st = st->next;
+  }
 
 
   success = aba_detected;
+
+
   return success;
 #else
   // No ABA is possible with lock-based synchronization. Let the test succeed only
@@ -384,7 +434,7 @@ test_cas()
 
   counter = 0;
   pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); 
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
   pthread_mutexattr_init(&mutex_attr);
   pthread_mutex_init(&lock, &mutex_attr);
 

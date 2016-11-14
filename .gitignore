@@ -11,6 +11,8 @@
 
 # Unignore all dirs
 !*/
+# Ignore TEST dir
+TEST*/
 
 # unignore makefile
 !Makefile
@@ -20,5 +22,11 @@
 !run
 
 
+# ignore object and temp files
 *.o
 *~*
+
+# ignore zip files
+*.gz
+*.zip
+*.tar.gz
