@@ -203,3 +203,29 @@ int stack_size(stack_t* stack)
   }
   return i;
 }
+
+
+void add_pool(item_t** pool, item_t* item)
+{
+
+  item_t *pt = *pool;
+  while(pt && pt->next)
+  {
+    pt = pt->next;
+  }
+  if(pt)
+  {
+    pt->next = item;
+  }else
+  {
+    *pool = item;
+  }
+  item->next = NULL;
+}
+
+item_t* from_pool(item_t **pool)
+{
+  item_t *pt = *pool;
+  *pool = pt->next;
+  return pt;
+}

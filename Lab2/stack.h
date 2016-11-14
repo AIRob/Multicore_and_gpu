@@ -66,6 +66,13 @@ void stack_destroy(stack_t *stack);
 // Get the number of items
 int stack_size(stack_t *stack);
 
+// Manage the pool
+// append an item in the pool
+void add_pool(item_t **pool, item_t* item);
+
+// get an item from the pool
+item_t* from_pool(item_t **pool);
+
 
 /* Debug practice: check the boolean expression expr; if it computes to 0, print a warning message on standard error and exit */
 

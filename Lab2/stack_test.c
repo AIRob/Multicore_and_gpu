@@ -51,6 +51,7 @@ typedef int data_t;
 
 
 stack_t *stack;
+item_t *pool;
 data_t data;
 
 #if MEASURE != 0
@@ -236,30 +237,7 @@ test_pop_safe()
 item_t *A,*B,*C;
 int wait1 = 1, wait2 = 1, wait3 = 1, wait4 = 1;
 
-item_t *pool;
 
-void add_pool(item_t* item)
-{
-  if(pool)
-  {
-    item_t* head = pool;
-    while (pool->next != NULL) {
-      pool = pool->next;
-    }
-    pool->next = item;
-    pool = head;
-  }else{
-    pool = item;
-  }
-  item->next = NULL;
-}
-
-item_t* from_pool()
-{
-  item_t *pt = pool;
-  pool = pool->next;
-  return pt;
-}
 
 void* aba_thread_0(void* arg)
 {
@@ -286,7 +264,7 @@ void* aba_thread_1(void *arg)
 {
   item_t *old = stack->head;
   stack->head = old->next;
-  add_pool(old);
+  add_pool(&pool, old);
 
   printf("Thread 1 : pop %d -> success\n",  old->value);
 
@@ -295,7 +273,7 @@ void* aba_thread_1(void *arg)
   while(wait4);
 
   // push A
-  item_t *new_item = from_pool();
+  item_t *new_item = from_pool(&pool);
   new_item->value = 1;
   new_item->next = stack->head;
   stack->head = new_item;
@@ -309,7 +287,7 @@ void* aba_thread_2(void* arg)
 {
   item_t *old = stack->head;
   stack->head = old->next;
-  add_pool(old);
+  add_pool(&pool, old);
 
   printf("Thread 2 : pop %d -> success\n", old->value);
   wait4 = 0;
@@ -322,6 +300,7 @@ test_aba()
 {
 
 #if NON_BLOCKING == 1 || NON_BLOCKING == 2
+  printf("\n");
   int success, aba_detected = 0;
   // Write here a test for the ABA problem
 
