@@ -1,36 +1,10 @@
 #include <cstdio>
 #include <algorithm>
 
-#include <pthread.h>
 #include <string.h>
 
-#include "sort.h"
-
-// These can be handy to debug your code through printf. Compile with CONFIG=DEBUG flags and spread debug(var)
-// through your code to display values that may understand better why your code may not work. There are variants
-// for strings (debug()), memory addresses (debug_addr()), integers (debug_int()) and buffer size (debug_size_t()).
-// When you are done debugging, just clean your workspace (make clean) and compareile with CONFIG=RELEASE flags. When
-// you demonstrate your lab, please cleanup all debug() statements you may use to faciliate the reading of your code.
-#if defined DEBUG && DEBUG != 0
-int *begin;
-#define debug(var) printf("[%s:%s:%d] %s = \"%s\"\n", __FILE__, __FUNCTION__, __LINE__, #var, var); fflush(NULL)
-#define debug_addr(var) printf("[%s:%s:%d] %s = \"%p\"\n", __FILE__, __FUNCTION__, __LINE__, #var, var); fflush(NULL)
-#define debug_int(var) printf("[%s:%s:%d] %s = \"%d\"\n", __FILE__, __FUNCTION__, __LINE__, #var, var); fflush(NULL)
-#define debug_size_t(var) printf("[%s:%s:%d] %s = \"%zu\"\n", __FILE__, __FUNCTION__, __LINE__, #var, var); fflush(NULL)
-#else
-#define show(first, last)
-#define show_ptr(first, last)
-#define debug(var)
-#define debug_addr(var)
-#define debug_int(var)
-#define debug_size_t(var)
-#endif
-
-
-
-
-
-
+#define NB_THREADS 3
+#include <pthread.h>
 
 
 
@@ -61,48 +35,6 @@ struct Argument
 
 
 
-
-// A C++ container class that translate int pointer
-// into iterators with little constant penalty
-template<typename T>
-class DynArray
-{
-	typedef T& reference;
-	typedef const T& const_reference;
-	typedef T* iterator;
-	typedef const T* const_iterator;
-	typedef ptrdiff_t difference_type;
-	typedef size_t size_type;
-
-	public:
-	DynArray(T* buffer, size_t size)
-	{
-		this->buffer = buffer;
-		this->size = size;
-	}
-
-	iterator begin()
-	{
-		return buffer;
-	}
-
-	iterator end()
-	{
-		return buffer + size;
-	}
-
-	protected:
-		T* buffer;
-		size_t size;
-};
-
-static
-void
-cxx_sort(int *array, size_t size)
-{
-	DynArray<int> cppArray(array, size);
-	std::sort(cppArray.begin(), cppArray.end());
-}
 
 // A very simple quicksort implementation
 // * Recursion until array size is 1
@@ -172,6 +104,7 @@ simple_quicksort(int *array, size_t size)
 	}
 }
 
+
 #if NB_THREADS > 1
 
 List tab_list[NB_THREADS * NB_THREADS];
@@ -179,7 +112,6 @@ List final_list[NB_THREADS];
 int *buffer, *buffer2;
 int pivots[NB_THREADS-1];
 int size_for_thread, size_for_last;
-int counter = NB_THREADS;
 
 void* thread_sample(void *args)
 {
@@ -188,6 +120,7 @@ void* thread_sample(void *args)
 	int *array = arg->array;
 	int borne_max = id == NB_THREADS-1 ? size_for_last : size_for_thread;
 
+	//printf("thread %d\n", id);
 
 	for(int i=0;i<borne_max; ++i)
 	{
@@ -243,12 +176,9 @@ sort(int* array, size_t size)
 	//simple_quicksort(array, size);
 
 
-#if NB_THREADS == 0 || NB_THREADS == 1
+#if NB_THREADS == 0
 	// Some sequential-specific sorting code
-	simple_quicksort(array, size);
 #else
-
-
 	// Some parallel sorting-related code
 
 	size_for_thread = size / NB_THREADS;
@@ -294,8 +224,6 @@ sort(int* array, size_t size)
 	for (int i = 0; i < NB_THREADS; i++) {
 	  pthread_join(threads[i], NULL);
 	}
-
-
 
     for (int i = 0; i < NB_THREADS; i++) {
 	  pthread_create(&threads[i], NULL, &thread_merge, (void*)&args[i]);
@@ -344,6 +272,19 @@ sort(int* array, size_t size)
 	free(buffer);	
 	free(buffer2);
 
-
 #endif // #if NB_THREADS
+}
+
+
+int main()
+{
+	int array[] = {9, 3, 17, 4, 5, 20, 19, 11, 1, 8, 7, 2, 15, 14, 6};
+
+	sort(array,15);
+
+	printf("\n");
+	for(int i=0;i<15;i++)
+		printf("%d ", array[i]);
+
+	printf("\nTEST SORT\n");
 }
