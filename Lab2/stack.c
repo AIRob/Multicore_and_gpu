@@ -213,7 +213,7 @@ void add_pool(int pool_num, item_t* item)
   }else
   {
     pools_end[pool_num]->next = item;
-    pools_end[pool_num] = item;
+    //pools_end[pool_num] = item;
     //item_t *pt = pools[pool_num];
     //while(pt->next)
     //  pt = pt->next;
