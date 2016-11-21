@@ -25,6 +25,42 @@ int *begin;
 #define debug_size_t(var)
 #endif
 
+
+
+
+
+
+
+
+
+class List
+{
+public:
+	List() : size(0) {};
+	void set_buffer(int *pt) { buffer = pt;}
+	void push(int v) { buffer[size++] = v; }
+
+	void print(){
+		for(int i=0;i<size;i++)
+			printf("%d ",buffer[i]);
+		printf("\n");
+	}
+
+
+	int* buffer;
+	int size;
+};
+
+struct Argument
+{
+	int id;
+	int *array;
+};
+
+
+
+
+
 // A C++ container class that translate int pointer
 // into iterators with little constant penalty
 template<typename T>
@@ -135,40 +171,106 @@ simple_quicksort(int *array, size_t size)
 	}
 }
 
-// This is used as sequential sort in the pipelined sort implementation with drake (see merge.c)
-// to sort initial input data chunks before streaming merge operations.
+
+
+List tab_list[NB_THREADS * NB_THREADS];
+int *buffer;
+int pivots[NB_THREADS-1];
+int size_for_thread, size_for_last;
+
+void* thread_sample(void *args)
+{
+	Argument *arg = (Argument*) args;
+	int id = arg->id;
+	int *array = arg->array;
+	int borne_max = id == NB_THREADS-1 ? size_for_last : size_for_thread;
+	for(int i=0;i<borne_max; ++i)
+	{
+		int j = 0;
+		while(j<NB_THREADS-1 && array[i]>=pivots[j])
+		{
+			++j;
+		}
+		tab_list[NB_THREADS * id + j].push(array[i]);
+	}
+
+	return 0;
+}
+
+
+
 void
 sort(int* array, size_t size)
 {
-	// Do some sorting magic here. Just remember: if NB_THREADS == 0, then everything must be sequential
-	// When this function returns, all data in array must be sorted from index 0 to size and not element
-	// should be lost or duplicated.
-
-	// Use preprocessor directives to influence the behavior of your implementation. For example NB_THREADS denotes
-	// the number of threads to use and is defined at compareile time. NB_THREADS == 0 denotes a sequential version.
-	// NB_THREADS == 1 is a parallel version using only one thread that can be useful to monitor the overhead
-	// brought by addictional parallelization code.
-
-
-
-	// This is to make the base skeleton to work. Replace it with your own implementation
+	
 	simple_quicksort(array, size);
 
 
-
-	// Alternatively, use C++ sequential sort, just to see how fast it is
-	//cxx_sort(array, size);
-
-	// Note: you are NOT allowed to demonstrate code that uses C or C++ standard sequential or parallel sort or merge
-	// routines (qsort, std::sort, std::merge, etc). It's more interesting to learn by writing it yourself.
-
-
-
-	// Reproduce this structure here and there in your code to compile sequential or parallel versions of your code.
 #if NB_THREADS == 0
 	// Some sequential-specific sorting code
 #else
 	// Some parallel sorting-related code
+
+	size_for_thread = size / NB_THREADS;
+	size_for_last = size - size_for_thread * (NB_THREADS - 1);
+
+
+	buffer = (int*) malloc(sizeof(int) * NB_THREADS * size);
+	for(int i=0;i<NB_THREADS*NB_THREADS; ++i)
+	{
+		tab_list[i].set_buffer(buffer + i*size_for_thread);
+	}
+
+	
+	//printf("Pivots : ");
+	for(int i=0;i<NB_THREADS-1;++i)
+	{
+		pivots[i] = array[i * size_for_thread];
+		//printf("%d ",pivots[i]);
+	}	
+	//printf("\n");
+
+
+	pthread_t threads[NB_THREADS];
+	Argument args[NB_THREADS];
+
+
+
+    for (int i = 0; i < NB_THREADS; i++) {
+	  args[i].id = i;
+	  args[i].array = array + size_for_thread * i;
+	  pthread_create(&threads[i], NULL, &thread_sample, (void*)&args[i]);
+	}
+
+
+	for (int i = 0; i < NB_THREADS; i++) {
+	  pthread_join(threads[i], NULL);
+	}
+
+
+	/*for(int i=0;i<NB_THREADS;++i)
+	{
+		printf("List thread %d :\n",i);
+		for(int j=0;j<NB_THREADS;++j)
+		{
+			tab_list[i*NB_THREADS+j].print();
+		}
+		printf("\n");
+	}*/
+
+	int *pt = array;
+	for(int i=0;i<NB_THREADS*NB_THREADS;++i)
+	{
+		if(tab_list[i].size>0)
+		{
+			memcpy(pt,tab_list[i].buffer,tab_list[i].size * sizeof(int));
+			pt += tab_list[i].size;
+		}
+	
+	}
+
+
+	free(buffer);	
+
 #endif // #if NB_THREADS
 }
-
