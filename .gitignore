@@ -21,6 +21,12 @@ TEST*/
 !variables
 !run
 
+!*.graphml
+!*.dat
+!*.xml
+!*.fillmein
+!*.in
+
 
 # ignore object and temp files
 *.o
