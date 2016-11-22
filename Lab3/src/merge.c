@@ -142,6 +142,7 @@ drake_run(task_t *task)
 		}
 
 	}
+
 /*else if(drake_task_killed(left_link->pred))
 	{
 		memcpy(parent,right,sizeof(int)*right_size);
