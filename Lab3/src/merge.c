@@ -122,6 +122,56 @@ drake_run(task_t *task)
 
 	// Merge as much as you can here
 
+//	if(!drake_task_killed())//) && !drake_task_killed(right_link->pred))
+//printf("RUN\n");
+	{
+		int a=0,b=0,i=0;
+		for(i=0;i<parent_size && (a<left_size || b<right_size) ;++i)
+		{
+			if((left[a]<right[b] && a<left_size) || b>=right_size)
+			{
+				parent[i] = left[a++];
+				left_consumed++;
+				parent_pushed++;
+			}else{
+				parent[i] = right[b++];			
+				right_consumed++;
+				parent_pushed++;
+			}
+			//printf("%d ",parent[i]);
+		}
+
+	}
+/*else if(drake_task_killed(left_link->pred))
+	{
+		memcpy(parent,right,sizeof(int)*right_size);
+		left_consumed = 0;
+		right_consumed = right_size;
+	}else if(drake_task_killed(right_link->pred))
+	{
+		memcpy(parent,left,sizeof(int)*left_size);
+		left_consumed = left_size;
+		right_consumed = 0;
+	}
+*/
+	/*int a = left, b = mid+1;
+	for(int i=left;i<=right;++i)
+	{
+		if((array[a]<array[b] && a <= mid) || b>right)
+		{
+			array_tmp[i] = array[a++];
+		}else
+			array_tmp[i] = array[b++];
+		//array_tmp[i] = array[a]<array[b] ? array[a++] : array[b++];
+	}
+	memcpy(array + left, array_tmp+left,sizeof(int) * (right-left + 1));
+}
+*/
+	/*printf("here\n");
+	int i=0;
+	for(i=0;i<left_size;i++)
+		printf("%d ",left[i]);
+	printf("\n");*/
 
 	// Don't forget, the task may receive more data from its left or right child, unless the left or right child terminated.
 	// You will need to know the state of a task with
@@ -152,6 +202,10 @@ drake_run(task_t *task)
 	// check drake_task_is_depleted(task_tp t)
 	//
 	// That returns 1 if all predecessors of task t are killed and all input buffers are empty, or if task t is killed and 0 otherwise.
+
+	if( left_consumed + right_consumed == 0) // drake_task_is_depleted(*task))
+		return 1;	
+
 	return 0;
 }
 
