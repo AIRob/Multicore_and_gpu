@@ -52,12 +52,6 @@ public:
 	int size;
 };
 
-struct Argument
-{
-	int id;
-	int *array;
-};
-
 
 
 
@@ -103,6 +97,13 @@ cxx_sort(int *array, size_t size)
 	DynArray<int> cppArray(array, size);
 	std::sort(cppArray.begin(), cppArray.end());
 }
+
+// A very simple quicksort implementation
+// * Recursion until array size is 1
+// * Bad pivot picking
+// * Not in place
+
+
 
 // A very simple quicksort implementation
 // * Recursion until array size is 1
@@ -172,68 +173,109 @@ simple_quicksort(int *array, size_t size)
 	}
 }
 
-#if NB_THREADS > 1
 
-List tab_list[NB_THREADS * NB_THREADS];
-List final_list[NB_THREADS];
-int *buffer, *buffer2;
-int pivots[NB_THREADS-1];
-int size_for_thread, size_for_last;
-int counter = NB_THREADS;
-
-void* thread_sample(void *args)
+struct Argument
 {
-	Argument *arg = (Argument*) args;
-	int id = arg->id;
-	int *array = arg->array;
-	int borne_max = id == NB_THREADS-1 ? size_for_last : size_for_thread;
+	int* array;
+	int left, right, id;
+};
 
 
-	for(int i=0;i<borne_max; ++i)
-	{
-		//printf("%d ", array[i]);
-		int j = 0;
-		while(j<NB_THREADS-1 && array[i]>pivots[j])
-		{
-			++j;
-		}
-		tab_list[NB_THREADS * id + j].push(array[i]);
-	}
 
-	//printf("\n");
-
-	/*for(int i=0;i<NB_THREADS;++i)
-	{
-		simple_quicksort(tab_list[NB_THREADS * id + i].buffer,tab_list[NB_THREADS * id + i].size);
-	}*/
-
-	return 0;
+void swap(int *a, int *b)
+{
+	int t = *a;*a = *b;	*b = t;
 }
 
-void* thread_merge(void* args)
-{
-	Argument *arg = (Argument*) args;
-	int id = arg->id;
-	int pt = 0;
 
-	for(int i=0;i<NB_THREADS;++i)
+
+
+pthread_t threads[NB_THREADS];
+Argument arguments[NB_THREADS];
+pthread_mutex_t mutex;
+
+int threads_used = 0;
+
+void* p_quicksort(void *args)
+{
+	Argument*  arg = (Argument *) args;
+
+	int left = arg->left;
+	int init_left = left;
+	int right = arg->right;
+	int init_right = right;
+	int* array = arg->array;
+	int id = arg->id;
+	if(left>=right) return 0;
+
+
+
+	//pivot choice : median of first middle and last values
+	int a = array[left];
+	int b = array[(left+right)/2];
+	int c = array[right];
+
+	int pivot_i;
+
+	if(a>=b && a>=c)
+		pivot_i	= b>=c? (left+right)/2 : right;
+	else if(b>=a && b>=c)
+		pivot_i = a>=c? left : right;
+	else
+		pivot_i = a>=b? left : (left+right)/2;
+
+	int pivot = array[pivot_i];
+
+
+	// place the pivot at the beginning
+	swap(array + init_left, array + pivot_i);
+
+	++left;
+	while(left<=right)
 	{
-		int index = i*NB_THREADS+id;
-		if(tab_list[index].size > 0)
-		{
-			memcpy(final_list[id].buffer + final_list[id].size,tab_list[index].buffer,sizeof(int)*tab_list[index].size);
-			final_list[id].size += tab_list[index].size;
+		
+		while(left<init_right && array[left]<array[init_left])	left++;
+		while(array[right]>array[init_left])	right--;
+		if(right>left)	swap(array + (left++),array + (right--));
+		else left++;
+		
+	}
+	// replace the pivot at the correct place
+	swap(array + init_left,array + right);
+
+
+
+	if(right-1-init_left>=1)
+	{
+		// if there is a thread free
+		if(threads_used<NB_THREADS)
+		{	//give this part of the array to another thread
+			pthread_mutex_lock(&mutex);			//to protect the variable threads_used
+			arguments[threads_used].left = init_left;
+			arguments[threads_used].right = right-1;
+		  	pthread_create(&threads[threads_used], NULL, &p_quicksort, (void*)&arguments[threads_used]);
+			++threads_used;
+			pthread_mutex_unlock(&mutex);
+		}else	
+		{	//treat this part of the array recursively
+
+			arguments[id].left = init_left;
+			arguments[id].right = right-1;
+			p_quicksort(arguments + id);
 		}
-		//final_list[id].print();
 	}
 
-	//final_list[id].size = pt;
-	simple_quicksort(final_list[id].buffer,final_list[id].size);
+	// right part always recursively in the same thread
+	if(init_right-(right+1)>=1)
+	{
 
-	return 0;
-
+		arguments[id].left = right+1;
+		arguments[id].right = init_right;
+		p_quicksort(arguments + id);
+	}
 }
-#endif
+
+
 
 
 void
@@ -242,108 +284,35 @@ sort(int* array, size_t size)
 	
 	//simple_quicksort(array, size);
 
-
-#if NB_THREADS == 0 || NB_THREADS == 1
-	// Some sequential-specific sorting code
-	simple_quicksort(array, size);
+#if NB_THREADS == 0
+	simple_quicksort(array, size);	
 #else
 
-
-	// Some parallel sorting-related code
-
-	size_for_thread = size / NB_THREADS;
-	size_for_last = size - size_for_thread * (NB_THREADS - 1);
+	if(pthread_mutex_init(&mutex,NULL)!=0)
+		printf("\n\nERROROR MUTEX\n\n");
 
 
-	buffer = (int*) malloc(sizeof(int) * NB_THREADS * size );
-	for(int i=0;i<NB_THREADS*NB_THREADS; ++i)
+	//init arguments
+	for(int i=0;i<NB_THREADS;i++)
 	{
-		tab_list[i].set_buffer(buffer + i*size_for_thread);
+		arguments[i].array = array;
+		arguments[i].id = i;
 	}
 
-	buffer2 = (int*) malloc(sizeof(int) * size * NB_THREADS);
-	for(int i=0;i<NB_THREADS; ++i)
-	{
-		final_list[i].set_buffer(buffer2 + i*size);
-	}
+	// launch the first thread
+	arguments[0].left = 0;
+	arguments[0].right = size-1;
+	++threads_used;
+ 	pthread_create(&threads[0], NULL, &p_quicksort, (void*)&arguments[0]);
 
 
-
-	
-	for(int i=0;i<NB_THREADS-1;++i)
-	{
-		pivots[i] = array[i * size_for_thread];
-	}	
-	simple_quicksort(pivots,NB_THREADS-1);
-
-	pivots[0] = 7;
-	pivots[1] = 17;
-
-	pthread_t threads[NB_THREADS];
-	Argument args[NB_THREADS];
-
-
-
-    for (int i = 0; i < NB_THREADS; i++) {
-	  args[i].id = i;
-	  args[i].array = array + size_for_thread * i;
-	  pthread_create(&threads[i], NULL, &thread_sample, (void*)&args[i]);
-	}
-
-
-	for (int i = 0; i < NB_THREADS; i++) {
-	  pthread_join(threads[i], NULL);
-	}
-
-
-
-    for (int i = 0; i < NB_THREADS; i++) {
-	  pthread_create(&threads[i], NULL, &thread_merge, (void*)&args[i]);
-	}
-
-
-	for (int i = 0; i < NB_THREADS; i++) {
-	  pthread_join(threads[i], NULL);
-	}
-
-
-
-	/*for(int i=0;i<NB_THREADS;i++)
-	{
-		printf("final list %d\n", i);
-		final_list[i].print();
-	}*/
-
-
-
-
-
-	/*for(int i=0;i<NB_THREADS;++i)
-	{
-		printf("List thread %d :\n",i);
-		for(int j=0;j<NB_THREADS;++j)
-		{
-			tab_list[i*NB_THREADS+j].print();
-		}
-		printf("\n");
-	}*/
-
-	int *pt = array;
+ 	// wait all threads
 	for(int i=0;i<NB_THREADS;++i)
 	{
-		if(final_list[i].size>0)
-		{
-			memcpy(pt,final_list[i].buffer,final_list[i].size * sizeof(int));
-			pt += final_list[i].size;
-		}
+		pthread_join(threads[i],NULL);
 	}
-
-
-
-
-	free(buffer);	
-	free(buffer2);
-
+	pthread_mutex_destroy(&mutex);
 
 #endif // #if NB_THREADS
+
 }

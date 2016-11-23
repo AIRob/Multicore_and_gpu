@@ -11,7 +11,25 @@
 #include "sort.h"
 #include "utils.h"
 
-// Filename of file containing the data to sort 
+
+void merge(int** first1_ptr, int* last1, int** first2_ptr, int* last2, int** res_ptr, int* lastres)
+{
+	int *first1 = *first1_ptr;
+	int *first2 = *first2_ptr;
+	int *res = *res_ptr;
+
+	// Loop inspired from std::merge in gcc-4.9
+	while (first1 != last1 && first2 != last2 && res != lastres)
+	{
+		*res++ = (*first2 < *first1)? *first2++ : *first1++;
+	}
+
+	*first1_ptr = first1;
+	*first2_ptr = first2;
+	*res_ptr = res;
+}
+
+// Filename of file containing the data to sort
 static char *input_filename;
 
 // These can be handy to debug your code through printf. Compile with CONFIG=DEBUG flags and spread debug(var)
@@ -122,57 +140,35 @@ drake_run(task_t *task)
 
 	// Merge as much as you can here
 
-//	if(!drake_task_killed())//) && !drake_task_killed(right_link->pred))
-//printf("RUN\n");
+	if(parent_size>0)
 	{
-		int a=0,b=0,i=0;
-		for(i=0;i<parent_size && (a<left_size || b<right_size) ;++i)
+		if(left_size>0 && right_size>0)
 		{
-			if((left[a]<right[b] && a<left_size) || b>=right_size)
+			int l = 0, r = 0, i;
+			for(i=0; i<parent_size && l<left_size && r<right_size; ++i)
 			{
-				parent[i] = left[a++];
-				left_consumed++;
-				parent_pushed++;
-			}else{
-				parent[i] = right[b++];			
-				right_consumed++;
+				if(l>=left_size) { parent[i] = right[r++]; right_consumed++; }
+				else if(r>=right_size) { parent[i] = left[l++]; left_consumed++; }
+				else if(left[l]<=right[r]) { parent[i] = left[l++]; left_consumed++; }
+				else if(left[l]>right[r]) { parent[i] = right[r++]; right_consumed++; }
 				parent_pushed++;
 			}
-			//printf("%d ",parent[i]);
-		}
 
-	}
-
-/*else if(drake_task_killed(left_link->pred))
-	{
-		memcpy(parent,right,sizeof(int)*right_size);
-		left_consumed = 0;
-		right_consumed = right_size;
-	}else if(drake_task_killed(right_link->pred))
-	{
-		memcpy(parent,left,sizeof(int)*left_size);
-		left_consumed = left_size;
-		right_consumed = 0;
-	}
-*/
-	/*int a = left, b = mid+1;
-	for(int i=left;i<=right;++i)
-	{
-		if((array[a]<array[b] && a <= mid) || b>right)
+		}else if(drake_task_killed(left_link->prod))
 		{
-			array_tmp[i] = array[a++];
-		}else
-			array_tmp[i] = array[b++];
-		//array_tmp[i] = array[a]<array[b] ? array[a++] : array[b++];
+			int limite = right_size<parent_size ? right_size : parent_size;
+			memcpy(parent,right,sizeof(int)*limite);
+			parent_pushed += limite;
+			right_consumed += limite;
+		}else if(drake_task_killed(right_link->prod))
+		{
+			int limite = left_size<parent_size ? left_size : parent_size;
+			memcpy(parent,right,sizeof(int)*limite);
+			parent_pushed += limite;
+			left_consumed += limite;
+		}
 	}
-	memcpy(array + left, array_tmp+left,sizeof(int) * (right-left + 1));
-}
-*/
-	/*printf("here\n");
-	int i=0;
-	for(i=0;i<left_size;i++)
-		printf("%d ",left[i]);
-	printf("\n");*/
+
 
 	// Don't forget, the task may receive more data from its left or right child, unless the left or right child terminated.
 	// You will need to know the state of a task with
@@ -185,7 +181,7 @@ drake_run(task_t *task)
 	// This returns 0 is more data can be accessible in later iterations, 1 if no more input can be expected from the task or if the task
 	// will not receive any more input from any of its input channels.
 
-	
+
 	// Write the number of element you consumed from left child and right child into left_consumed and right_consumed, respectively
 	// and the total number of elements you pushed toward parent in parent_pushed
 
@@ -203,11 +199,9 @@ drake_run(task_t *task)
 	// check drake_task_is_depleted(task_tp t)
 	//
 	// That returns 1 if all predecessors of task t are killed and all input buffers are empty, or if task t is killed and 0 otherwise.
+  //drake_task_is_depleted(task);
 
-	if( left_consumed + right_consumed == 0) // drake_task_is_depleted(*task))
-		return 1;	
-
-	return 0;
+	return drake_task_depleted(task);
 }
 
 int
