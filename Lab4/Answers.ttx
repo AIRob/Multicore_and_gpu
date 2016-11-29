@@ -1,0 +1,7 @@
+1) Simple.cu uses 16 cores on 1 SM
+
+2) Here the results are the same but maybe not always : with double precision
+
+3) index for 2D blocks		int idx = threadIdx.x*blockDim.x + threadIdx.y;
+
+
