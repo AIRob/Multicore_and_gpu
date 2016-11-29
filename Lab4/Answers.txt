@@ -55,4 +55,11 @@ bad coalescing :	a change in block id -> next item in the array
 We can see that coalescing is very important for performance.
 
 
+Mandelbrot
+-----------
 
+1) Instead of a double loop to calculate the pixels values we need to start a kernel which does the computation for one pixel.
+2) We will use 512 blocks of 512 threads
+3) To be able to use the Complex class in the kernel we have to use declare its methods with the modifier __device__
+
+6) Here load balancing is not a problem since a thread compute only one pixel

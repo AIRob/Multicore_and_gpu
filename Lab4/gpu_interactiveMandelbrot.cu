@@ -26,7 +26,7 @@
 
 // Image data
 	unsigned char	*pixels = NULL;
-	unsigned char 	*gpu_pixels = NULL;
+	unsigned char 	*gpu_pixels;
 	int gpu_size = 0;
 	int	 gImageWidth, gImageHeight;
 
@@ -61,18 +61,21 @@ struct cuComplex
     MYFLOAT   r;
     MYFLOAT   i;
     
-    cuComplex( MYFLOAT a, MYFLOAT b ) : r(a), i(b)  {}
+    __device__ cuComplex( MYFLOAT a, MYFLOAT b ) : r(a), i(b)  {}
     
+    __device__
     float magnitude2( void )
     {
         return r * r + i * i;
     }
     
+    __device__
     cuComplex operator*(const cuComplex& a)
     {
         return cuComplex(r*a.r - i*a.i, i*a.r + r*a.i);
     }
     
+    __device__
     cuComplex operator+(const cuComplex& a)
     {
         return cuComplex(r+a.r, i+a.i);
@@ -80,7 +83,7 @@ struct cuComplex
 };
 
 __global__
-void mandelbrot_kernel()
+void mandelbrot_kernel(unsigned char *gpu_pixels, int maxiter, int gImageWidth, int gImageHeight, MYFLOAT offsetx, MYFLOAT offsety, MYFLOAT scale)
 {
     int x = threadIdx.x;
     int y = blockIdx.x;
@@ -110,15 +113,14 @@ void mandelbrot_kernel()
 	    
     int offset = x + y * gImageWidth;
 
-    ptr[offset*4 + 0] = red;
-    ptr[offset*4 + 1] = green;
-    ptr[offset*4 + 2] = blue;
-	    
-    ptr[offset*4 + 3] = 255;
+    gpu_pixels[offset*4 + 0] = red;
+    gpu_pixels[offset*4 + 1] = green;
+    gpu_pixels[offset*4 + 2] = blue;
+    gpu_pixels[offset*4 + 3] = 255;
 }
 
 int mandelbrot( int x, int y)
-{
+{/*
     MYFLOAT jx = scale * (MYFLOAT)(gImageWidth/2 - x + offsetx/scale)/(gImageWidth/2);
     MYFLOAT jy = scale * (MYFLOAT)(gImageHeight/2 - y + offsety/scale)/(gImageWidth/2);
 
@@ -133,7 +135,8 @@ int mandelbrot( int x, int y)
             return i;
     }
 
-    return i;
+    return i;*/
+return 0;
 }
 
 void computeFractal( unsigned char *ptr)
@@ -149,7 +152,7 @@ void computeFractal( unsigned char *ptr)
 
     cudaEventRecord(start, 0);
 
-    mandelbrot_kernel<<<dimGrid, dimBlock>>>();
+    mandelbrot_kernel<<<dimGrid, dimBlock>>>(gpu_pixels, maxiter, gImageWidth, gImageHeight, offsetx, offsety, scale);
     
 
 // map from x, y to pixel position
