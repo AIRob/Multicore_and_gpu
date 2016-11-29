@@ -21,7 +21,8 @@ void simple(float *ca, float *cb, float *cc)
 {
 //	int idx = threadIdx.x*blockDim.x + threadIdx.y;
 //	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	int idx = blockIdx.x * (blockDim.x * blockDim.y ) + threadIdx.x*blockDim.x + threadIdx.y;
+	int idx = blockIdx.x + blockDim.x* threadIdx.x;
+//	int idx = threadIdx.y * blockDim.x + threadIdx.y;
 	cc[idx] = ca[idx] + cb[idx];
 }
 
@@ -77,8 +78,8 @@ int main()
 	float theTime=0;
 
 
-	dim3 dimBlock(16,16 );
-	dim3 dimGrid(1024*4,1 );
+	dim3 dimBlock(N,1);
+	dim3 dimGrid(N,1 );
 
 	cudaEventCreate(&myEvent);
 	cudaEventCreate(&laterEvent);

@@ -1,0 +1,58 @@
+1) Simple.cu uses 16 cores on 1 SM
+
+2) Here the results are the same but maybe not always : with double precision
+
+3) index for 2D blocks	:  idx = threadIdx.x*blockDim.x + threadIdx.y;
+
+
+4)
+We mesaured only the time of computation (not data transfer)
+For 1024 blocks of 1024 threads => GPU version is much faster
+	CPU : 0.000175	s
+	CPU : 0.027982 	s
+
+
+
+
+
+If we use too many threads per blocks (example a block of 2048x2048 threads) the results is incorrect
+
+
+5) After 2500 values (50 blocks of 50 threads) the GPU computation is faster than on the CPU .
+
+
+6) 
+
+7) I we look at our results the best is 1024 blocks of 1024 threads.
+It is a good soultion to keep the number of blocks and the number of threads balanced.
+
+1024 blocks / 1024 threads per blocks
+0.000176
+0.028095 
+
+1024 blocks / 32x32 threads per blocks
+0.000869
+0.027892 
+
+4096 blocks / 16x16 threads per blocks
+0.000238
+0.027725 
+
+
+
+
+8) 
+good coalescing :	a change in thread id -> next item in the array
+
+GPU : 0.000178
+CPU : 0.027267
+
+bad coalescing :	a change in block id -> next item in the array
+
+0.003989
+0.027576 
+
+We can see that coalescing is very important for performance.
+
+
+
