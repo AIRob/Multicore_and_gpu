@@ -2,13 +2,14 @@
 
 2) Here the results are the same but maybe not always : with double precision
 
-3) index for 2D blocks	:  idx = threadIdx.x*blockDim.x + threadIdx.y;
+3) index for 2D blocks	:  idx = (gridIdx.x*gridDim.x+gridIdx.y)*(blockDim.x * blockDim.y)+ threadIdx.x*blockDim.x + threadIdx.y;
+
 
 
 4)
 We mesaured only the time of computation (not data transfer)
 For 1024 blocks of 1024 threads => GPU version is much faster
-	CPU : 0.000175	s
+	GPU : 0.000175	s
 	CPU : 0.027982 	s
 
 
@@ -45,12 +46,12 @@ It is a good soultion to keep the number of blocks and the number of threads bal
 good coalescing :	a change in thread id -> next item in the array
 
 GPU : 0.000178
-CPU : 0.027267
+
 
 bad coalescing :	a change in block id -> next item in the array
 
-0.003989
-0.027576 
+GPU : 0.003989
+
 
 We can see that coalescing is very important for performance.
 
@@ -61,5 +62,15 @@ Mandelbrot
 1) Instead of a double loop to calculate the pixels values we need to start a kernel which does the computation for one pixel.
 2) We will use 512 blocks of 512 threads
 3) To be able to use the Complex class in the kernel we have to use declare its methods with the modifier __device__
+
+4) 
+
+GPU time to compute Mandelbrot : 0.000105 s
+CPU time to compute Mandelbrot : 0.094466 s
+
+5) Double precision : 
+
+CPU : 0.098465 s
+GPU : 0.000603 s
 
 6) Here load balancing is not a problem since a thread compute only one pixel

@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include "milli.h"
 // Image data
 	unsigned char	*pixels = NULL;
 	int	 gImageWidth, gImageHeight;
@@ -40,7 +40,7 @@ void initBitmap(int width, int height)
 #define DIM 512
 
 // Select precision here! float or double!
-#define MYFLOAT float
+#define MYFLOAT double
 
 // User controlled parameters
 int maxiter = 20;
@@ -52,19 +52,19 @@ struct cuComplex
 {
     MYFLOAT   r;
     MYFLOAT   i;
-    
+
     cuComplex( MYFLOAT a, MYFLOAT b ) : r(a), i(b)  {}
-    
+
     float magnitude2( void )
     {
         return r * r + i * i;
     }
-    
+
     cuComplex operator*(const cuComplex& a)
     {
         return cuComplex(r*a.r - i*a.i, i*a.r + r*a.i);
     }
-    
+
     cuComplex operator+(const cuComplex& a)
     {
         return cuComplex(r+a.r, i+a.i);
@@ -92,12 +92,10 @@ int mandelbrot( int x, int y)
 
 void computeFractal( unsigned char *ptr)
 {
-    cudaEvent_t start,stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+
     float duration = 0;
 
-    cudaEventRecord(start, 0);
+    ResetMilli();
 
     // map from x, y to pixel position
     for (int x = 0; x < gImageWidth; x++)
@@ -107,7 +105,7 @@ void computeFractal( unsigned char *ptr)
 
 		    // now calculate the value at that position
 		    int fractalValue = mandelbrot( x, y);
-		    
+
 		    // Colorize it
 		    int red = 255 * fractalValue/maxiter;
 		    if (red > 255) red = 255 - red;
@@ -115,20 +113,17 @@ void computeFractal( unsigned char *ptr)
 		    if (green > 255) green = 255 - green;
 		    int blue = 255 * fractalValue*20/maxiter;
 		    if (blue > 255) blue = 255 - blue;
-		    
+
 		    ptr[offset*4 + 0] = red;
 		    ptr[offset*4 + 1] = green;
 		    ptr[offset*4 + 2] = blue;
-		    
+
 		    ptr[offset*4 + 3] = 255;
     	}
 
-	cudaEventRecord(stop, 0);
 
-	cudaEventSynchronize(stop);
-	cudaEventElapsedTime(&duration, start, stop);
+	printf("%lf \n",GetSeconds());
 
-	printf("%f\n",(double)duration/1000);
 
 }
 
@@ -174,7 +169,7 @@ void PrintHelp()
 		glRasterPos2i(0, 0);
 
 		glDisable(GL_BLEND);
-		
+
 		glPopMatrix();
 	}
 }
@@ -183,15 +178,15 @@ void PrintHelp()
 void Draw()
 {
 	computeFractal(pixels);
-	
+
 // Dump the whole picture onto the screen. (Old-style OpenGL but without lots of geometry that doesn't matter so much.)
 	glClearColor( 0.0, 0.0, 0.0, 1.0 );
 	glClear( GL_COLOR_BUFFER_BIT );
 	glDrawPixels( gImageWidth, gImageHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
-	
+
 	if (print_help)
 		PrintHelp();
-	
+
 	glutSwapBuffers();
 }
 
@@ -231,7 +226,7 @@ static void mouse_motion(int x, int y)
 		mouse_x = x;
 		offsety += (mouse_y - y)*scale;
 		mouse_y = y;
-		
+
 		glutPostRedisplay();
 	}
 	else
@@ -266,7 +261,7 @@ void KeyboardProc(unsigned char key, int x, int y)
 }
 
 // Main program, inits
-int main( int argc, char** argv) 
+int main( int argc, char** argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGBA );
@@ -277,8 +272,8 @@ int main( int argc, char** argv)
 	glutMotionFunc(mouse_motion);
 	glutKeyboardFunc(KeyboardProc);
 	glutReshapeFunc(Reshape);
-	
+
 	initBitmap(DIM, DIM);
-	
+
 	glutMainLoop();
 }
