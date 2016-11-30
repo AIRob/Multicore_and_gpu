@@ -8,7 +8,7 @@
 #include "milli.h"
 
 const int N = 1024; 		//1024	//50
-const int DIV = 256;		//32	//10
+const int DIV = 64;		//32	//10
 //const int blocksize = 16; 
 
 void clear_data(float *data, int size)
@@ -24,7 +24,7 @@ void simple(float *ca, float *cb, float *cc)
 	int Y = blockIdx.y * blockDim.y + threadIdx.y;
 
 
-	int idx = N * Y + X;
+	int idx = N * X + Y;
 	cc[idx] = ca[idx] + cb[idx];
 }
 

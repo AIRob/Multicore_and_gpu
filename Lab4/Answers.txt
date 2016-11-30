@@ -1,57 +1,62 @@
-1) Simple.cu uses 16 cores on 1 SM
+1) Simple.cu uses 16 threads on 1 core on 1 SM
 
 2) Here the results are the same but maybe not always : with double precision
 
-3) index for 2D blocks	:  idx = (gridIdx.x*gridDim.x+gridIdx.y)*(blockDim.x * blockDim.y)+ threadIdx.x*blockDim.x + threadIdx.y;
+3) index for 2D blocks	:
+	int X = blockIdx.x * blockDim.x + threadIdx.x;
+	int Y = blockIdx.y * blockDim.y + threadIdx.y;
 
+
+	int idx = N * Y + X;
+	cc[idx] = ca[idx] + cb[idx];
 
 
 4)
 We mesaured only the time of computation (not data transfer)
-For 1024 blocks of 1024 threads => GPU version is much faster
-	GPU : 0.000175	s
-	CPU : 0.027982 	s
+Block size 32 x 32 :
+GPU : 0.000231
+CPU : 0.027455 
 
 
 
 
-
-If we use too many threads per blocks (example a block of 2048x2048 threads) the results is incorrect
-
-
-5) After 2500 values (50 blocks of 50 threads) the GPU computation is faster than on the CPU .
+If we use too many threads per blocks (more than 1024) the results is incorrect
 
 
-6) 
+5) After 2500 values the GPU computation is faster than on the CPU .
+GPU : 0.000021
+CPU : 0.000019
+N = 50
+DIV = 10 
 
-7) I we look at our results the best is 1024 blocks of 1024 threads.
-It is a good soultion to keep the number of blocks and the number of threads balanced.
 
-1024 blocks / 1024 threads per blocks
+
+6) A good choice for the size of a block is a multiple of 32 because 32 threads can run in parallel on one core.
+
+7) 
+N = 1024 / DIV = 32	=> blocks of 32x32 = 1024 threads
+0.000234
+
+N = 1024 / DIV = 64	=> blocks of 16x16 = 256 threads
 0.000176
-0.028095 
 
-1024 blocks / 32x32 threads per blocks
-0.000869
-0.027892 
+N = 1024 / DIV = 128	=> blocks of 8x8 = 64 threads
+0.000335
 
-4096 blocks / 16x16 threads per blocks
-0.000238
-0.027725 
+N = 1024 / DIV = 256	=> blocks of 4x4 = 16 threads less than a warp 
+0.000995
 
 
 
 
-8) 
-good coalescing :	a change in thread id -> next item in the array
+8)
 
-GPU : 0.000178
+good coalescing : 
+0.000175
 
 
-bad coalescing :	a change in block id -> next item in the array
-
-GPU : 0.003989
-
+bad coalescing :
+0.000423
 
 We can see that coalescing is very important for performance.
 
