@@ -1,7 +1,7 @@
 // Reduction lab, find maximum
 
 #include <stdio.h>
-#include "milli.c"
+#include "milli.h"
 
 __global__ void find_max(int *data, int N)
 {
