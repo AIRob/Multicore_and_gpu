@@ -1,3 +1,6 @@
+FIND_MAX
+--------
+
 1) 
 
 Timing for size 33554432 :
@@ -16,6 +19,38 @@ GPU time 0.155476
 
 3)
 One way to optimze it could be to use shared memory for each block.
+
+
+
+
+BITONIC SORTING
+---------------
+
+1) One half of the threads produce two results (the two values swapped or not) and the other half of threads do not produce a result
+
+2) In one block we can handle up to 2048 items (if all the 1024 threads produce the result)
+
+3) we cannot syncrhonize the threads of different blocks. To solve this we stopped and re-launche another kernel
+
+4) 
+
+for 1024x1024 = 1048576 items we have a very interesting speedup (around 10 times faster)
+CPU : 1.248912
+GPU : 0.127522
+
+
+The break even point is between 32768 and 65536 items. (we only tested power of 2 numbers)
+**** for 32768 items :
+CPU : 0.049026
+GPU : 0.063220
+
+**** for 65536 items :
+CPU : 0.096656
+GPU : 0.055700
+
+
+
+A parallelized version on the cpu could give better performance than the sequential verion. But it is sure that it would not be better than the gpu version.
 
 
 
