@@ -1,0 +1,21 @@
+1) 
+
+Timing for size 33554432 :
+
+CPU time 0.104595
+GPU time 0.092665
+
+
+2)
+At size 33 554 432 the times are comparable.
+
+From size 67 108 864 we can see that the GPU version is much faster.
+ 
+CPU time 0.208956
+GPU time 0.155476
+
+3)
+One way to optimze it could be to use shared memory for each block.
+
+
+
