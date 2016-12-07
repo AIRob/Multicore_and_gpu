@@ -72,7 +72,7 @@ void bitonic_gpu(int *data, int N)
       }*/
       
       bitonic_kernel<<<dimGrid, dimBlock>>>(devdata, N, j, k);
-
+      cudaThreadSynchronize();
     }
   }
 

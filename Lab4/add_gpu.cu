@@ -7,8 +7,8 @@
 #include <unistd.h>
 #include "milli.h"
 
-const int N = 1024; 		//1024	//50
-const int DIV = 256;		//32	//10
+const int N =  50; 		//1024	//50
+const int DIV = 10;		//32	//10
 //const int blocksize = 16; 
 
 void clear_data(float *data, int size)
@@ -97,7 +97,7 @@ int main()
 	
 	cudaEventElapsedTime(&theTime, myEvent, laterEvent);
 
-	printf("%lf\n",(double)theTime/1000);
+	printf("GPU : %lf\n",(double)theTime/1000);
 
 	cudaThreadSynchronize();
 	cudaMemcpy( c, cc, size, cudaMemcpyDeviceToHost ); 
@@ -110,7 +110,7 @@ int main()
 
 	add_matrix(a, b, ccpu, N);
 //	printf("%d \n", GetMilliseconds()); //GetMicroseconds());
-	printf("%lf \n",GetSeconds());
+	printf("CPU : %lf \n",GetSeconds());
 
 	int ok =1;
 	for (int i = 0; i < N*N; i++)
