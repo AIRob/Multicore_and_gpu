@@ -1,0 +1,19 @@
+Answers :
+---------
+
+
+Question: How is the communication between the host and the graphic card handled?
+
+The comunication is done with buffers
+1) create the buffer on the gpu and fill them with the data (clCreateBuffer)
+2) pass the buffers as arguments to the kernel
+
+
+Question: What function executes your kernel?
+
+The following function executes the kernel : 
+	clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
+
+Question: How does the kernel know what element to work on?
+
+Pointers to the buffers are passed as arguments and each thread can get its id with get_global_id().
