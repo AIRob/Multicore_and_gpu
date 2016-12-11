@@ -207,7 +207,7 @@ int main( int argc, char** argv)
 
 	close_OpenCL();
 
-	writeppm("out.ppm", n,m,out);
+	writeppm("out2.ppm", n,m,out);
 
 
 //	glutMainLoop();
