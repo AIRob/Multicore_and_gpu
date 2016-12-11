@@ -4,3 +4,7 @@ all:
 
 perso:
 	gcc milli.c readppm.c CLutilities.c test.c -lOpenCL -I/usr/local/cuda/include -lGL -lglut -o test
+
+
+init:
+	gcc milli.c readppm.c CLutilities.c test_init.c -lOpenCL -I/usr/local/cuda/include -lGL -lglut -o init

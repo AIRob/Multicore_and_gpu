@@ -202,7 +202,7 @@ int main( int argc, char** argv)
 	clGetDeviceInfo(device, CL_DEVICE_LOCAL_MEM_SIZE, sizeof(cl_ulong), &size, 0);
 	printf("max size local memory =============== %lu\n",size);
 
-	readAndBuildKernel("filter2.cl");
+	readAndBuildKernel("filter.cl");
 	computeImages();
 
 	close_OpenCL();

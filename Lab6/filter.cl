@@ -2,7 +2,7 @@
  * Image filter in OpenCL
  */
 
-#define KERNELSIZE 2
+#define KERNELSIZE 5
 
 __kernel void filter(__global unsigned char *image, __global unsigned char *out, const unsigned int n, const unsigned int m)
 { 
