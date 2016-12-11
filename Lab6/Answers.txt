@@ -2,6 +2,8 @@ Answers :
 ---------
 
 
+1.
+
 Question: How is the communication between the host and the graphic card handled?
 
 The comunication is done with buffers
@@ -14,6 +16,40 @@ Question: What function executes your kernel?
 The following function executes the kernel : 
 	clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
 
+
 Question: How does the kernel know what element to work on?
 
 Pointers to the buffers are passed as arguments and each thread can get its id with get_global_id().
+
+
+
+2.
+
+QUESTION: How much data did you put in local (shared memory?
+
+(16 + 2*KERNELSIZE)² *3
+
+
+QUESTION: How much data does each thread copy to local memory?
+	
+each thread copies 4 *3 data to local memory. (only the pixels too close to the border do not copy data)
+
+
+QUESTION: How did you handle the necessary overlap between the work groups?
+
+the local memory contains the overlap.
+
+
+QUESTION: If we would like to increase the block size, about how big work groups would be safe to use in this case? Why?
+
+the size of the image has to be divisible by the size of the work groupds.
+
+QUESTION: How much speedup did you get over the naive version?
+
+	KERNELSIZE = 5
+
+Naive version : time 0.003633
+Optimized version :  time 0.002149
+
+
+

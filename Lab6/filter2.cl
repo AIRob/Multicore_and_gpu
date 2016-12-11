@@ -49,7 +49,7 @@ __kernel void filter(__global unsigned char *image, __global unsigned char *out,
 
 		ii-=KERNELSIZE;
 		jj-=KERNELSIZE;
-}
+	}
 
 	barrier(CLK_LOCAL_MEM_FENCE);
 
