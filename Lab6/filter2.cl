@@ -6,8 +6,8 @@
 
 __kernel void filter(__global unsigned char *image, __global unsigned char *out, const unsigned int n, const unsigned int m)
 { 
-  unsigned int j = get_global_id(1) % 512;
-  unsigned int i = get_global_id(0) % 512;
+	unsigned int j = get_global_id(1) % 512;
+	unsigned int i = get_global_id(0) % 512;
 
 	unsigned ii = get_local_id(0);
 	unsigned jj = get_local_id(1);
@@ -30,16 +30,17 @@ __kernel void filter(__global unsigned char *image, __global unsigned char *out,
 		mem[(ii*size+jj)*3+1] = image[((i-KERNELSIZE)*n+(j-KERNELSIZE))*3+1];
 		mem[(ii*size+jj)*3+2] = image[((i-KERNELSIZE)*n+(j-KERNELSIZE))*3+2];
 
-		jj+= 2*KERNELSIZE;
+		jj+=2*KERNELSIZE;
+		mem[(ii*size+jj)*3] = image[((i-KERNELSIZE)*n+(j+KERNELSIZE))*3];
+		mem[(ii*size+jj)*3+1] = image[((i-KERNELSIZE)*n+(j+KERNELSIZE))*3+1];
+		mem[(ii*size+jj)*3+2] = image[((i-KERNELSIZE)*n+(j+KERNELSIZE))*3+2];
+
+		jj-=2*KERNELSIZE;
+		ii+= 2*KERNELSIZE;
 		mem[(ii*size+jj)*3] = image[((i+KERNELSIZE)*n+(j-KERNELSIZE))*3];
 		mem[(ii*size+jj)*3+1] = image[((i+KERNELSIZE)*n+(j-KERNELSIZE))*3+1];
 		mem[(ii*size+jj)*3+2] = image[((i+KERNELSIZE)*n+(j-KERNELSIZE))*3+2];
 
-		ii+=2*KERNELSIZE;
-		jj-=2*KERNELSIZE;
-		mem[(ii*size+jj)*3] = image[((i-KERNELSIZE)*n+(j+KERNELSIZE))*3];
-		mem[(ii*size+jj)*3+1] = image[((i-KERNELSIZE)*n+(j+KERNELSIZE))*3+1];
-		mem[(ii*size+jj)*3+2] = image[((i-KERNELSIZE)*n+(j+KERNELSIZE))*3+2];
 
 		jj+=2*KERNELSIZE;
 		mem[(ii*size+jj)*3] = image[((i+KERNELSIZE)*n+(j+KERNELSIZE))*3];
